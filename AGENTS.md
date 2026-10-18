@@ -24,11 +24,37 @@ templates/          one template per document type (see "Pick the template" belo
   _exam_preamble.tex    shared preamble of every exam template
   _report_preamble.tex  shared preamble of every graded-document template
 _course_template/   copied for each new course (folders + COURSE.md)
+assets/logo.png     university logo; templates show it with \UniLogo[height], found from any depth
 scripts/            setup, new document, build, read sources, notebooks, checks, packaging
-prompts/            reusable briefs (exam sheets, theory notes, audit, transcript, reports, ...)
+.claude/skills/     task skills (/exam-final, /theory-notes, /audit-sheet, ...), read by Claude and Copilot
 docs/               sheet anatomy, writing style, LaTeX traps, workflows
 <Course>/           one folder per course (see _course_template/README.md)
 ```
+
+## Skills (start here)
+
+Each task has a skill in `.claude/skills/<name>/SKILL.md`. Claude Code and Copilot both load
+them: as `/name <args>`, or on their own when the request matches. A skill holds the steps
+for one task; this file holds the rules that apply to all of them.
+
+| Skill | Does |
+|-------|------|
+| `/new-course <Course>` | create the folder, sort the files, fill in COURSE.md |
+| `/read-sources <Course>` | extract every slide, photo, page, notebook into `.temp/` and inventory it |
+| `/transcript <file>` | lecture transcript → exam-alert outline in `transcripts/` |
+| `/exam-final <Course>` | final sheet from a question pool (4-part layout) |
+| `/exam-midterm <Course>` | sheet for announced question types + proofs |
+| `/theory-notes <Course>` | theory sheet + question bank for a theory course |
+| `/audit-sheet <file.tex>` | independent adversarial audit, fresh context, no edits |
+| `/graded-report <Course> <kind>` | lab report + notebook, report, proposal, exercise, essay |
+| `/presentation <Course> <min>` | slides or slide assets + speaking script |
+| `/tutor <question>` | solve one question by hand in chat, no files |
+
+When you add a skill: one folder per skill, lowercase-hyphen name matching the folder,
+a `description` that says what it does **and when to use it**, steps that point to
+`AGENTS.md` / `docs/` instead of repeating them, and `$ARGUMENTS` handled with a fallback
+("if empty, take it from the user's message") so it also works where arguments are not
+substituted.
 
 ## Pick the template
 
@@ -91,7 +117,7 @@ what the hint says and note it where the question is copied.
 8. **Build and look at it:** `scripts/build.sh --preview <file>.tex`, fix every Overfull
    warning, and look at the pages. A box split across pages or a formula past the margin
    is a bug. For a hang or a broken section, use `scripts/build_sections.py`.
-9. **Audit:** for a big sheet, run `prompts/PROMPT_audit.md` in a fresh session.
+9. **Audit:** for a big sheet, run `/audit-sheet <file>` (it runs in a fresh context).
 10. Leave the compiled PDF next to the `.tex`. Commit only when the user asks.
 
 ## Workflow for graded work

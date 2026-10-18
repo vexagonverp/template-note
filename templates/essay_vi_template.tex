@@ -9,7 +9,7 @@
 %    - Margins 30/20/25/25 mm, 1.5 line spacing, 1 cm first-line indent: the usual
 %      Vietnamese university format. Check your faculty's rules and adjust.
 %    - Vietnamese is not hyphenated like English, so hyphenation is switched off.
-%    - Put logo.png next to this file (the title page shows a box until you do).
+%    - The logo is assets/logo.png at the repo root (or a logo.png next to this file).
 %============================================================
 \documentclass[a4paper,fontsize=13pt,oneside,numbers=noenddot,chapterprefix=true]{scrreprt}
 \usepackage{fontspec}
@@ -52,6 +52,20 @@
 \setcounter{secnumdepth}{3}
 \setcounter{tocdepth}{2}
 
+% ---- university logo: \UniLogo[height] ----
+% Looks for logo.png next to the document, then assets/logo.png at the repo root from
+% any folder depth (templates/, <Course>/notes/, <Course>/paper/<name>/, ...).
+% No logo file -> prints nothing. Swap assets/logo.png to change university.
+\def\LogoFile{}
+\IfFileExists{logo.png}{\def\LogoFile{logo.png}}{%
+\IfFileExists{assets/logo.png}{\def\LogoFile{assets/logo.png}}{%
+\IfFileExists{../assets/logo.png}{\def\LogoFile{../assets/logo.png}}{%
+\IfFileExists{../../assets/logo.png}{\def\LogoFile{../../assets/logo.png}}{%
+\IfFileExists{../../../assets/logo.png}{\def\LogoFile{../../../assets/logo.png}}{}}}}}
+\newcommand{\UniLogo}[1][3cm]{\ifx\LogoFile\empty\else\includegraphics[height=#1]{\LogoFile}\fi}
+% \UniLogoBreak[h]: the logo plus a line break, both left out when there is no logo file
+\newcommand{\UniLogoBreak}[1][1.6cm]{\ifx\LogoFile\empty\else\includegraphics[height=#1]{\LogoFile}\\[6pt]\fi}
+
 % ---- who and what (edit these) ----
 \newcommand{\StudentName}{Your Name}
 \newcommand{\StudentID}{YOUR-ID}
@@ -71,7 +85,7 @@
   {\large\bfseries \University\par}
   {\large\bfseries \Faculty\par}
   \vspace{1.2cm}
-  \IfFileExists{logo.png}{\includegraphics[width=3cm]{logo.png}}{\fbox{\parbox[c][3cm][c]{3cm}{\centering logo.png}}}\par
+  \UniLogo[3cm]\par
   \vspace{1.2cm}
   {\LARGE\bfseries TIỂU LUẬN\par}
   \vspace{4pt}

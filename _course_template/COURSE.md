@@ -18,7 +18,7 @@ Course code: <code>
 ## Hints and transcripts
 
 Photos of the board / slides shown in class go in `hints/`. Lecture transcripts or
-recording summaries go in `transcripts/` (make them with `prompts/PROMPT_transcript.md`).
+recording summaries go in `transcripts/` (make them with `/transcript`).
 One line per file, so an agent knows what each one is without guessing.
 
 | File | What it shows |

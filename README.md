@@ -28,7 +28,8 @@ scripts/setup.sh "Jane Doe" "S1234567" --venv
 scripts/new_note.sh Calculus final "Calculus I"      # -> Calculus/notes/JaneDoe_S1234567_Final_ExamSheet.tex
 
 # 3. put files in Calculus/slides, materials, hints, transcripts; fill in Calculus/COURSE.md;
-#    then give your agent the matching brief from prompts/
+#    or just let the agent do it: /new-course Calculus "Calculus I" <folder of files>
+#    then: /exam-final Calculus   (or /exam-midterm, /theory-notes, /graded-report, ...)
 
 # 4. build, and render the pages to .temp/preview/ to look at them
 scripts/build.sh --preview Calculus/notes/JaneDoe_S1234567_Final_ExamSheet.tex
@@ -54,7 +55,10 @@ scripts/build.sh --preview Calculus/notes/JaneDoe_S1234567_Final_ExamSheet.tex
 | `asset` | `slide_asset_template.tex` | a slide-sized math image for Canva / PowerPoint |
 | `paper` | `paper_llncs/` | Springer LNCS paper folder |
 
-Each template has a built PDF next to it, so you can see what it looks like. The exam
+Each template has a built PDF next to it, so you can see what it looks like. Title pages show
+`assets/logo.png` through `\UniLogo[height]`; replace that file to change university, or delete it
+to drop the logo everywhere (nothing breaks). The LNCS paper and the slide asset leave it out on
+purpose: Springer does not allow logos, and assets are pasted into someone else's slide. The exam
 templates share `templates/_exam_preamble.tex`; the graded ones share
 `templates/_report_preamble.tex`. Edit a shared preamble there and run
 `python3 scripts/sync_preamble.py`.
@@ -74,6 +78,8 @@ templates share `templates/_exam_preamble.tex`; the graded ones share
 
 ```
 AGENTS.md                     rules every agent follows
+assets/logo.png               university logo on every title page (swap or delete it)
+.claude/skills/               one skill per task, used by Claude Code and Copilot (see below)
 CLAUDE.md                     Claude Code entry point: @AGENTS.md
 .claude/settings.json         Claude Code: allowlist for the build/read commands (no rm)
 .github/copilot-instructions.md   Copilot: short form of the rules
@@ -95,11 +101,7 @@ scripts/
   apply_patches.py            many exact replacements, each must match once, dry run first
   figstyle.py                 shared matplotlib style + save() for report/slide figures
   package_submission.sh       hand-in folder + zip in <Course>/submit/
-prompts/
-  PROMPT_midterm_sheet.md  PROMPT_final_sheet.md  PROMPT_theory_sheet.md
-  PROMPT_audit.md              adversarial check of a finished sheet (fresh session)
-  PROMPT_transcript.md         lecture transcript -> exam-alert outline
-  PROMPT_presentation.md  PROMPT_report.md  PROMPT_tutor.md  PROMPT_fixup.md
+
 docs/
   SHEET_ANATOMY.md   page order and boxes for every exam template
   WRITING_STYLE.md   how the prose should read, register per document type
@@ -108,11 +110,32 @@ docs/
   LOCAL_LLM.md       running the agent rules with a local model
 ```
 
+## Skills
+
+The repo is meant to be driven by Claude Code or GitHub Copilot. Both read
+`.claude/skills/`, so every task is a slash command (or loads by itself when you ask for it):
+
+| Skill | Use it to |
+|-------|-----------|
+| `/new-course <Course> ["Name"] [files]` | set up a course: folders, sort files, fill in COURSE.md |
+| `/read-sources <Course>` | extract and inventory every slide, page, photo, notebook |
+| `/transcript <file> [L05]` | turn a lecture transcript into an exam-alert outline |
+| `/exam-final <Course>` | final sheet from a question pool, numbers will change |
+| `/exam-midterm <Course>` | sheet for announced question types, with proof templates |
+| `/theory-notes <Course> [midterm\|final\|both]` | theory sheet + question bank with mock exams |
+| `/audit-sheet <file.tex>` | adversarial audit in a fresh context; prints a findings table |
+| `/graded-report <Course> <kind> [Descriptor]` | lab (+ notebook), report, proposal, exercise, essay |
+| `/presentation <Course> <minutes> [paper]` | Beamer slides or Canva assets + speaking script |
+| `/tutor <question>` | one question solved by hand in chat, nothing written to disk |
+
+A typical exam: `/new-course` → `/read-sources` → `/transcript` (if you have recordings) →
+`/exam-final` → `/audit-sheet`.
+
 ## Using it with an agent
 
-The rules live in one place: `AGENTS.md`. Claude Code loads it through `CLAUDE.md`
-(`@AGENTS.md`); Copilot reads `.github/copilot-instructions.md` and can use the `notes`
-agent; most other agents read `AGENTS.md` directly.
+The rules live in one place: `AGENTS.md`; the task steps live in `.claude/skills/`. Claude
+Code loads the rules through `CLAUDE.md` (`@AGENTS.md`); Copilot reads
+`.github/copilot-instructions.md`, can use the `notes` agent, and picks up the same skills.
 
 The main points:
 
@@ -127,11 +150,11 @@ The main points:
 
 ```
 slides / pool / past exams / hints / transcripts
-        │  pdf_text · pptx_text · photos_to_jpg · PROMPT_transcript
+        │  /read-sources · /transcript
         ▼
-   COURSE.md (what was announced) ──► new_note.sh <kind> ──► write with the prompt
+   COURSE.md (/new-course) ──► /exam-final · /exam-midterm · /theory-notes · /graded-report
         │                                                     │
         │                       check_template.py (numbers) ◄─┤
         ▼                                                     ▼
-   build.sh --preview ──► fix warnings, look at pages ──► PROMPT_audit (fresh session)
+   build.sh --preview ──► fix warnings, look at pages ──► /audit-sheet (fresh context)
 ```

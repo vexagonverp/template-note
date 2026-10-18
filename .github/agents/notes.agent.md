@@ -20,7 +20,8 @@ Decide which one the message is. If it's a math question, don't touch files; jus
 
 ## Editing documents
 
-Read `AGENTS.md` before starting.
+Read `AGENTS.md` before starting. For a whole task (a new sheet, a report, an audit), use the
+matching skill in `.claude/skills/`; for a math question, follow `.claude/skills/tutor/SKILL.md`.
 
 - Read a file before you edit it. Make small, targeted edits; don't rewrite whole files.
 - Many notes are too big to read whole. Search for the section first, then read only those lines.

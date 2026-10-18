@@ -20,8 +20,7 @@ PPTX diagrams: export the deck to PDF (Keynote / PowerPoint), then `pdf_pages.sh
 ## Turn a lecture recording into exam alerts
 
 1. Get the transcript (auto-captions, a recording tool, or notes).
-2. Run `prompts/PROMPT_transcript.md` on it; save as `Course/transcripts/L05.md`.
-3. Add a line to the table in `Course/COURSE.md`.
+2. Run `/transcript <file> L05`: it writes `Course/transcripts/L05.md` and adds the line to `COURSE.md`.
 4. When building the sheet, every `[EXAM ALERT]` goes on page 1 and must be covered; cite it
    as `\sref{transcript L5, seg. 2}`.
 

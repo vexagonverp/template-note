@@ -47,6 +47,7 @@
 \fi
 \usepackage{parskip}
 \usepackage{listings}
+\usepackage{graphicx}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,calc,fit,shapes.geometric,backgrounds}
 % bookmarks=false: math in a heading + PDF bookmarks hangs the compile forever
@@ -175,6 +176,20 @@
   ar/.style={-{Stealth[length=1.6mm]}}
 }
 
+% ---- university logo: \UniLogo[height] ----
+% Looks for logo.png next to the document, then assets/logo.png at the repo root from
+% any folder depth (templates/, <Course>/notes/, <Course>/paper/<name>/, ...).
+% No logo file -> prints nothing. Swap assets/logo.png to change university.
+\def\LogoFile{}
+\IfFileExists{logo.png}{\def\LogoFile{logo.png}}{%
+\IfFileExists{assets/logo.png}{\def\LogoFile{assets/logo.png}}{%
+\IfFileExists{../assets/logo.png}{\def\LogoFile{../assets/logo.png}}{%
+\IfFileExists{../../assets/logo.png}{\def\LogoFile{../../assets/logo.png}}{%
+\IfFileExists{../../../assets/logo.png}{\def\LogoFile{../../../assets/logo.png}}{}}}}}
+\newcommand{\UniLogo}[1][1.6cm]{\ifx\LogoFile\empty\else\includegraphics[height=#1]{\LogoFile}\fi}
+% \UniLogoBreak[h]: the logo plus a line break, both left out when there is no logo file
+\newcommand{\UniLogoBreak}[1][1.6cm]{\ifx\LogoFile\empty\else\includegraphics[height=#1]{\LogoFile}\\[6pt]\fi}
+
 \pagestyle{fancy}
 \fancyhf{}
 \cfoot{\small\thepage}
@@ -192,6 +207,7 @@
 \begin{document}
 
 \begin{center}
+  \UniLogoBreak[1.6cm]
   {\LARGE\bfseries \CourseName: \ExamName}\\[6pt]
   {\large \ExamInfo}\\[4pt]
   {\normalsize Student: \StudentName\ (\StudentID)}\\[2pt]

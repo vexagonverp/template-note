@@ -1,4 +1,6 @@
-Follow the rules in `AGENTS.md` at the repo root. Short version:
+Follow the rules in `AGENTS.md` at the repo root. Task steps are skills in `.claude/skills/`
+(`/new-course`, `/read-sources`, `/transcript`, `/exam-final`, `/exam-midterm`, `/theory-notes`,
+`/audit-sheet`, `/graded-report`, `/presentation`, `/tutor`): use the matching one. Short version of the rules:
 
 - New documents come from `scripts/new_note.sh <Course> <kind>` (midterm, final, theory, qbank,
   cheatsheet, lab, report, proposal, exercise, essay-en, essay-vi, slides, script, asset, paper).

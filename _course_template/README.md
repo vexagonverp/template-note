@@ -13,7 +13,7 @@ announcement word for word, assignment briefs, and one line per hint photo or tr
 | Textbook, assigned papers | `materials/` | `pdf_text.py` |
 | Saved web page (.mhtml) | `materials/` | `python3 scripts/mhtml_text.py` |
 | Board photo, screenshot (HEIC/JPG/PNG) | `hints/` | `scripts/photos_to_jpg.sh` |
-| Lecture transcript / recording summary | `transcripts/` | plain markdown (`prompts/PROMPT_transcript.md`) |
+| Lecture transcript / recording summary | `transcripts/` | plain markdown (outline it with `/transcript`) |
 | Lab notebook (.ipynb) | `labs/` | `python3 scripts/nb_text.py`, run with `scripts/nb_run.py` |
 
 File names with spaces are fine; quote them in the shell.

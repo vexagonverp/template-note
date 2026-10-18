@@ -32,6 +32,27 @@
 \usepackage{tcolorbox}
 \tcbuselibrary{skins}
 
+\usepackage{graphicx}
+% ---- university logo: \UniLogo[height] ----
+% Looks for logo.png next to the document, then assets/logo.png at the repo root from
+% any folder depth (templates/, <Course>/notes/, <Course>/paper/<name>/, ...).
+% No logo file -> prints nothing. Swap assets/logo.png to change university.
+\def\LogoFile{}
+\IfFileExists{logo.png}{\def\LogoFile{logo.png}}{%
+\IfFileExists{assets/logo.png}{\def\LogoFile{assets/logo.png}}{%
+\IfFileExists{../assets/logo.png}{\def\LogoFile{../assets/logo.png}}{%
+\IfFileExists{../../assets/logo.png}{\def\LogoFile{../../assets/logo.png}}{%
+\IfFileExists{../../../assets/logo.png}{\def\LogoFile{../../../assets/logo.png}}{}}}}}
+\newcommand{\UniLogo}[1][1.6cm]{\ifx\LogoFile\empty\else\includegraphics[height=#1]{\LogoFile}\fi}
+% \UniLogoBreak[h]: the logo plus a line break, both left out when there is no logo file
+\newcommand{\UniLogoBreak}[1][1.6cm]{\ifx\LogoFile\empty\else\includegraphics[height=#1]{\LogoFile}\\[6pt]\fi}
+% logo on the title frame (white rounded badge, top right) and small in the footline
+\newcommand{\TitleLogo}{\ifx\LogoFile\empty\else\begin{tikzpicture}[remember picture,overlay]
+  \node[anchor=north east, fill=white, inner sep=3pt, rounded corners=3pt]
+    at ([xshift=-10pt,yshift=-10pt]current page.north east) {\UniLogo[1.4cm]};
+\end{tikzpicture}\fi}
+\newcommand{\FootLogo}{\ifx\LogoFile\empty\else\raisebox{-0.25\height}{\UniLogo[2.2ex]}\hspace{0.5em}\fi}
+
 % ---- who and what (edit these) ----
 \newcommand{\StudentName}{Your Name}
 \newcommand{\StudentID}{YOUR-ID}
@@ -61,7 +82,7 @@
 \setbeamertemplate{footline}{%
   \begin{beamercolorbox}[wd=\paperwidth,ht=3.2ex,dp=1.2ex]{}%
     \colorbox{mist}{\makebox[\dimexpr\paperwidth-2\fboxsep][l]{\scriptsize\color{slate}\hspace{1em}%
-    \insertshorttitle\hfill\insertframenumber/\inserttotalframenumber\hspace{1em}}}%
+    \FootLogo\insertshorttitle\hfill\insertframenumber/\inserttotalframenumber\hspace{1em}}}%
   \end{beamercolorbox}}
 
 \newtcolorbox{plainbox}{enhanced, arc=4pt, boxrule=0pt, frame hidden, colback=mist,
@@ -78,6 +99,7 @@
 \begin{document}
 
 \begin{darkframe}
+  \TitleLogo
   \vfill
   {\Huge\bfseries\inserttitle\par}\vspace{6pt}
   {\large\color{accent}\insertsubtitle\par}\vspace{18pt}

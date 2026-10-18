@@ -1,0 +1,18 @@
+{
+  "latex-workshop.latex.tools": [
+    { "name": "tectonic", "command": "tectonic", "args": ["--synctex", "--keep-logs", "%DOCFILE%.tex"], "env": {} }
+  ],
+  "latex-workshop.latex.recipes": [
+    { "name": "tectonic", "tools": ["tectonic"] }
+  ],
+  "latex-workshop.latex.recipe.default": "tectonic",
+  "latex-workshop.latex.autoBuild.run": "never",
+  "latex-workshop.view.pdf.viewer": "tab",
+  "latex-workshop.latex.clean.fileTypes": ["*.aux", "*.log", "*.out", "*.toc", "*.synctex.gz", "*.xdv"],
+  "files.exclude": {
+    "**/*.aux": true, "**/*.log": true, "**/*.out": true, "**/*.toc": true,
+    "**/*.synctex.gz": true, "**/*.xdv": true, ".temp": true, "**/__pycache__": true
+  },
+  "files.associations": { "*.tex": "latex" },
+  "[latex]": { "editor.wordWrap": "on", "editor.tabSize": 2 }
+}

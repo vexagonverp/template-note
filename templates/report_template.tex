@@ -1,0 +1,162 @@
+%============================================================
+%  REPORT template (assignment, technical report, case analysis)
+%  Start one with:  scripts/new_note.sh <Course> report "Course Name" Assignment_Topic
+%  Build:  tectonic <file>.tex
+%
+%  The file name IS the submission name (<Name>_<ID>_<Descriptor>.tex -> .pdf).
+%  Never rename the PDF by hand after building; rename the .tex instead.
+%  Register: academic, third person, plain words (docs/WRITING_STYLE.md).
+%============================================================
+\documentclass[a4paper,12pt]{article}
+\usepackage[top=2.5cm,bottom=2.5cm,left=2.5cm,right=2.5cm]{geometry}
+% >>> SHARED PREAMBLE (templates/_report_preamble.tex, do not edit here)
+% Shared preamble for graded documents: lab reports, assignment reports, proposals,
+% exercise answers, English essays, presentation scripts. Edit
+% templates/_report_preamble.tex, then run: python3 scripts/sync_preamble.py
+% \documentclass, geometry, spacing and the "who and what" block stay per template.
+\usepackage{amsmath,amssymb}
+% Fonts: Times look. Under tectonic (XeTeX) use TeX Gyre Termes through fontspec,
+% which also covers Vietnamese names; newtxmath for matching math. pdflatex falls back
+% to newtxtext + newtxmath.
+\usepackage{iftex}
+\ifTUTeX
+  \usepackage{newtxmath}
+  \usepackage{fontspec}
+  \setmainfont{texgyretermes}[Extension=.otf, UprightFont=*-regular, BoldFont=*-bold,
+    ItalicFont=*-italic, BoldItalicFont=*-bolditalic]
+\else
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{newtxtext,newtxmath}
+\fi
+\usepackage{setspace}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{microtype}
+\usepackage{xurl}
+\setlength{\emergencystretch}{2em}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{needspace}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,shapes.geometric,shapes.multipart,backgrounds}
+\usepackage{fancyhdr}
+% bookmarks=false: math in a heading + PDF bookmarks hangs the compile forever
+\usepackage[hidelinks,bookmarks=false]{hyperref}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+
+% Figures live next to the .tex in figs/ (the notebook saves there too), so moving
+% the .tex and the notebook together never breaks a path.
+\graphicspath{{figs/}{../figs/}}
+
+% ---- boxes (black and white, print friendly) ----
+\newtcolorbox{notebox}{enhanced, breakable, colback=white, colframe=black, boxrule=0.4pt,
+  arc=2pt, left=5pt, right=5pt, top=3pt, bottom=3pt}
+\newtcolorbox{formulabox}[1][Key formulae]{enhanced, breakable, colback=white, colframe=black,
+  boxrule=0.6pt, arc=2pt, left=5pt, right=5pt, top=3pt, bottom=3pt,
+  title={\small\bfseries #1}, coltitle=black, colbacktitle=white}
+\newtcolorbox{resultbox}{enhanced, breakable, colback=black!5, frame hidden, boxrule=0pt,
+  arc=0pt, left=6pt, right=6pt, top=3pt, bottom=3pt}
+
+% ---- code listings: short excerpts with a caption, never whole files ----
+% \needspace{8\baselineskip} before a listing keeps it from splitting badly.
+\lstdefinestyle{pyStyle}{language=Python, basicstyle=\ttfamily\small, keywordstyle=\bfseries,
+  commentstyle=\itshape, breaklines=true, frame=single, numbers=left, numberstyle=\tiny,
+  xleftmargin=15pt, captionpos=b, columns=fullflexible, keepspaces=true}
+\lstdefinestyle{cppStyle}{style=pyStyle, language=C++}
+
+% ---- TikZ styles for architecture / pipeline diagrams ----
+\tikzset{
+  container/.style={draw, rounded corners=2pt, align=center, font=\small, inner sep=5pt,
+    minimum width=28mm, minimum height=10mm, fill=blue!4},
+  optional/.style={container, dashed, fill=white},
+  person/.style={draw, rounded corners=8pt, align=center, font=\small, fill=black!6, inner sep=5pt},
+  extsys/.style={container, fill=black!8},
+  lbl/.style={font=\scriptsize, align=center},
+  arr/.style={-{Stealth[length=2mm]}, thick}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\cfoot{\small\thepage}
+\renewcommand{\headrulewidth}{0pt}
+% <<< SHARED PREAMBLE
+
+% ---- who and what (edit these) ----
+\newcommand{\StudentName}{Your Name}
+\newcommand{\StudentID}{YOUR-ID}
+\newcommand{\CourseName}{Course Name}
+\newcommand{\DocType}{Technical Report}
+\newcommand{\School}{School of Computer Science and Engineering}
+\newcommand{\University}{University Name}
+
+\usepackage{parskip}
+\onehalfspacing
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
+
+\title{\vspace{-1.2cm}\bfseries Title of the Report}
+\author{\StudentName\\ \small Student ID: \StudentID\\ \small \School\\ \small \University\\
+  \small \CourseName\\ \small \DocType}
+\date{\today}
+
+%============================================================
+\begin{document}
+\maketitle
+\noindent\textbf{Keywords:} keyword one, keyword two, keyword three.
+
+\begin{abstract}
+One paragraph: the problem, what this report does, the main result.
+\end{abstract}
+
+\section{Introduction}
+Context, then the task, then a roadmap: Section~\ref{sec:task1} covers Task 1, \dots
+
+\section{Task 1: Name of the task}\label{sec:task1}
+Answer the task in the assignment's own order. Figure~\ref{fig:containers} and
+Table~\ref{tab:tradeoffs} show the design.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=10mm and 14mm]
+  \node[person] (u) {User};
+  \node[container, right=of u] (api) {API service\\\scriptsize[Python]};
+  \node[extsys, right=of api] (db) {Database};
+  \draw[arr] (u) -- node[lbl, above] {HTTPS} (api);
+  \draw[arr] (api) -- node[lbl, above] {SQL} (db);
+\end{tikzpicture}
+\caption{Container view of the system. Arrows show who calls whom.}
+\label{fig:containers}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+Option & Strength & Weakness\\
+\midrule
+A & \dots & \dots\\
+B & \dots & \dots\\
+\bottomrule
+\end{tabular}
+\caption{Trade-offs between the options.}
+\label{tab:tradeoffs}
+\end{table}
+
+\section{Conclusion}
+What was shown, its limits, and what comes next \cite{ref1}.
+
+\begin{thebibliography}{9}
+\bibitem{ref1} A. Author and B. Author, ``Title of the paper,'' \emph{Journal}, vol.~1, no.~2, pp.~3--4, 2024.
+\bibitem{ref2} C. Author, \emph{Book Title}. City: Publisher, 2020.
+\bibitem{ref3} Organisation, ``Page title,'' 2025. [Online]. Available: \url{https://example.org}
+\end{thebibliography}
+
+\end{document}

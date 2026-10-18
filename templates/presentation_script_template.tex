@@ -1,0 +1,143 @@
+%============================================================
+%  PRESENTATION SCRIPT template (what to say, slide by slide)
+%  The slides themselves may be Beamer (slides_template.tex), Canva or PowerPoint.
+%  For Canva slides, make math / chart images with slide_asset_template.tex and
+%  scripts/figstyle.py (use("slides")).
+%  Start one with:  scripts/new_note.sh <Course> script "Course Name"
+%  Build:  tectonic <file>.tex
+%  Register: spoken, short sentences, "we" / "you". Read it aloud once with a timer.
+%============================================================
+\documentclass[12pt,a4paper]{article}
+\usepackage[top=1.2cm,bottom=1.4cm,left=1.5cm,right=1.5cm]{geometry}
+% >>> SHARED PREAMBLE (templates/_report_preamble.tex, do not edit here)
+% Shared preamble for graded documents: lab reports, assignment reports, proposals,
+% exercise answers, English essays, presentation scripts. Edit
+% templates/_report_preamble.tex, then run: python3 scripts/sync_preamble.py
+% \documentclass, geometry, spacing and the "who and what" block stay per template.
+\usepackage{amsmath,amssymb}
+% Fonts: Times look. Under tectonic (XeTeX) use TeX Gyre Termes through fontspec,
+% which also covers Vietnamese names; newtxmath for matching math. pdflatex falls back
+% to newtxtext + newtxmath.
+\usepackage{iftex}
+\ifTUTeX
+  \usepackage{newtxmath}
+  \usepackage{fontspec}
+  \setmainfont{texgyretermes}[Extension=.otf, UprightFont=*-regular, BoldFont=*-bold,
+    ItalicFont=*-italic, BoldItalicFont=*-bolditalic]
+\else
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{newtxtext,newtxmath}
+\fi
+\usepackage{setspace}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{microtype}
+\usepackage{xurl}
+\setlength{\emergencystretch}{2em}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{needspace}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,shapes.geometric,shapes.multipart,backgrounds}
+\usepackage{fancyhdr}
+% bookmarks=false: math in a heading + PDF bookmarks hangs the compile forever
+\usepackage[hidelinks,bookmarks=false]{hyperref}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+
+% Figures live next to the .tex in figs/ (the notebook saves there too), so moving
+% the .tex and the notebook together never breaks a path.
+\graphicspath{{figs/}{../figs/}}
+
+% ---- boxes (black and white, print friendly) ----
+\newtcolorbox{notebox}{enhanced, breakable, colback=white, colframe=black, boxrule=0.4pt,
+  arc=2pt, left=5pt, right=5pt, top=3pt, bottom=3pt}
+\newtcolorbox{formulabox}[1][Key formulae]{enhanced, breakable, colback=white, colframe=black,
+  boxrule=0.6pt, arc=2pt, left=5pt, right=5pt, top=3pt, bottom=3pt,
+  title={\small\bfseries #1}, coltitle=black, colbacktitle=white}
+\newtcolorbox{resultbox}{enhanced, breakable, colback=black!5, frame hidden, boxrule=0pt,
+  arc=0pt, left=6pt, right=6pt, top=3pt, bottom=3pt}
+
+% ---- code listings: short excerpts with a caption, never whole files ----
+% \needspace{8\baselineskip} before a listing keeps it from splitting badly.
+\lstdefinestyle{pyStyle}{language=Python, basicstyle=\ttfamily\small, keywordstyle=\bfseries,
+  commentstyle=\itshape, breaklines=true, frame=single, numbers=left, numberstyle=\tiny,
+  xleftmargin=15pt, captionpos=b, columns=fullflexible, keepspaces=true}
+\lstdefinestyle{cppStyle}{style=pyStyle, language=C++}
+
+% ---- TikZ styles for architecture / pipeline diagrams ----
+\tikzset{
+  container/.style={draw, rounded corners=2pt, align=center, font=\small, inner sep=5pt,
+    minimum width=28mm, minimum height=10mm, fill=blue!4},
+  optional/.style={container, dashed, fill=white},
+  person/.style={draw, rounded corners=8pt, align=center, font=\small, fill=black!6, inner sep=5pt},
+  extsys/.style={container, fill=black!8},
+  lbl/.style={font=\scriptsize, align=center},
+  arr/.style={-{Stealth[length=2mm]}, thick}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\cfoot{\small\thepage}
+\renewcommand{\headrulewidth}{0pt}
+% <<< SHARED PREAMBLE
+
+% ---- who and what (edit these) ----
+\newcommand{\StudentName}{Your Name}
+\newcommand{\StudentID}{YOUR-ID}
+\newcommand{\CourseName}{Course Name}
+\newcommand{\TalkTitle}{Title of the Talk}
+\newcommand{\TalkSource}{Based on: A. Author et al., ``Paper title,'' Venue, 2026.}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\titleformat{\section}{\large\bfseries}{}{0pt}{}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries}{}{0pt}{}
+
+% \slide{number}{title}{time}  -> one section per slide, time on the right
+\newcommand{\slide}[3]{\section{Slide #1: #2 \hfill {\normalsize\mdseries #3}}}
+\newcommand{\onscreen}[1]{\textbf{On screen:} \emph{#1}\par}
+\newcommand{\say}{\textbf{Say:}\par}
+\newcommand{\tip}[1]{\begin{notebox}\small\textbf{Tip:} #1\end{notebox}}
+
+%============================================================
+\begin{document}
+\begin{center}
+  {\LARGE\bfseries \TalkTitle}\\[4pt]
+  {\large Presentation script, one section per slide}\\[4pt]
+  {\normalsize \CourseName\ \textbar\ \StudentName\ (\StudentID)}\\[2pt]
+  {\small \TalkSource}
+\end{center}
+\hrule
+
+\begin{notebox}
+\textbf{How to use this script.} 12 slides, about 10 minutes. If you get lost, come back to
+this one sentence: \emph{``The paper shows that \dots''} The worked example is on slide 7.
+\end{notebox}
+
+\slide{1}{Title}{0:30}
+\onscreen{Title, names, venue.}
+\say
+Good morning. Today we look at \dots
+
+\slide{2}{The problem}{1:00}
+\onscreen{One picture of the problem.}
+\say
+Imagine \dots
+\tip{Pause here and look at the audience.}
+
+\section{Study notes (not read aloud)}
+The parts of the paper you need to understand to answer questions.
+
+\section{Backup: answers for likely questions}
+\subsection{``Why not just use X?''}
+Short answer, then one sentence of detail.
+
+\end{document}

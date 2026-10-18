@@ -1,0 +1,173 @@
+%============================================================
+%  LAB REPORT template (goes with a Jupyter notebook: templates/lab_template.ipynb)
+%  Start one with:  scripts/new_note.sh <Course> lab "Course Name" Lab1_Report
+%  Build:  tectonic <file>.tex      Package:  scripts/package_submission.sh ...
+%
+%  Rules that kept past labs honest:
+%    - Every number in the report comes from the saved notebook output
+%      (scripts/nb_run.py, then scripts/nb_text.py --outputs to copy them).
+%    - The notebook saves figures to figs/ next to this .tex; the report
+%      \includegraphics the same PDFs. Move the .tex and .ipynb together.
+%    - Sections mirror the notebook's "## Step k" headings one to one.
+%    - Code: short excerpts with a caption, not whole cells.
+%============================================================
+\documentclass[12pt,a4paper]{article}
+\usepackage[margin=2cm,headsep=4pt,footskip=24pt]{geometry}
+% >>> SHARED PREAMBLE (templates/_report_preamble.tex, do not edit here)
+% Shared preamble for graded documents: lab reports, assignment reports, proposals,
+% exercise answers, English essays, presentation scripts. Edit
+% templates/_report_preamble.tex, then run: python3 scripts/sync_preamble.py
+% \documentclass, geometry, spacing and the "who and what" block stay per template.
+\usepackage{amsmath,amssymb}
+% Fonts: Times look. Under tectonic (XeTeX) use TeX Gyre Termes through fontspec,
+% which also covers Vietnamese names; newtxmath for matching math. pdflatex falls back
+% to newtxtext + newtxmath.
+\usepackage{iftex}
+\ifTUTeX
+  \usepackage{newtxmath}
+  \usepackage{fontspec}
+  \setmainfont{texgyretermes}[Extension=.otf, UprightFont=*-regular, BoldFont=*-bold,
+    ItalicFont=*-italic, BoldItalicFont=*-bolditalic]
+\else
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{newtxtext,newtxmath}
+\fi
+\usepackage{setspace}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{microtype}
+\usepackage{xurl}
+\setlength{\emergencystretch}{2em}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{needspace}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,shapes.geometric,shapes.multipart,backgrounds}
+\usepackage{fancyhdr}
+% bookmarks=false: math in a heading + PDF bookmarks hangs the compile forever
+\usepackage[hidelinks,bookmarks=false]{hyperref}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+
+% Figures live next to the .tex in figs/ (the notebook saves there too), so moving
+% the .tex and the notebook together never breaks a path.
+\graphicspath{{figs/}{../figs/}}
+
+% ---- boxes (black and white, print friendly) ----
+\newtcolorbox{notebox}{enhanced, breakable, colback=white, colframe=black, boxrule=0.4pt,
+  arc=2pt, left=5pt, right=5pt, top=3pt, bottom=3pt}
+\newtcolorbox{formulabox}[1][Key formulae]{enhanced, breakable, colback=white, colframe=black,
+  boxrule=0.6pt, arc=2pt, left=5pt, right=5pt, top=3pt, bottom=3pt,
+  title={\small\bfseries #1}, coltitle=black, colbacktitle=white}
+\newtcolorbox{resultbox}{enhanced, breakable, colback=black!5, frame hidden, boxrule=0pt,
+  arc=0pt, left=6pt, right=6pt, top=3pt, bottom=3pt}
+
+% ---- code listings: short excerpts with a caption, never whole files ----
+% \needspace{8\baselineskip} before a listing keeps it from splitting badly.
+\lstdefinestyle{pyStyle}{language=Python, basicstyle=\ttfamily\small, keywordstyle=\bfseries,
+  commentstyle=\itshape, breaklines=true, frame=single, numbers=left, numberstyle=\tiny,
+  xleftmargin=15pt, captionpos=b, columns=fullflexible, keepspaces=true}
+\lstdefinestyle{cppStyle}{style=pyStyle, language=C++}
+
+% ---- TikZ styles for architecture / pipeline diagrams ----
+\tikzset{
+  container/.style={draw, rounded corners=2pt, align=center, font=\small, inner sep=5pt,
+    minimum width=28mm, minimum height=10mm, fill=blue!4},
+  optional/.style={container, dashed, fill=white},
+  person/.style={draw, rounded corners=8pt, align=center, font=\small, fill=black!6, inner sep=5pt},
+  extsys/.style={container, fill=black!8},
+  lbl/.style={font=\scriptsize, align=center},
+  arr/.style={-{Stealth[length=2mm]}, thick}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\cfoot{\small\thepage}
+\renewcommand{\headrulewidth}{0pt}
+% <<< SHARED PREAMBLE
+
+% ---- who and what (edit these) ----
+\newcommand{\StudentName}{Your Name}
+\newcommand{\StudentID}{YOUR-ID}
+\newcommand{\CourseName}{Course Name}
+\newcommand{\LabTitle}{Lab N: Title of the lab}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\titleformat{\section}{\large\bfseries}{\thesection.}{0.5em}{}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.5em}{}
+
+%============================================================
+\begin{document}
+
+\begin{center}
+  {\LARGE\bfseries \LabTitle}\\[6pt]
+  {\large \CourseName}\\[4pt]
+  {\normalsize Student: \StudentName\ --- \StudentID}
+\end{center}
+\hrule
+\vspace{8pt}
+
+\section{Introduction}
+What the lab asks for, in two or three sentences. The companion notebook is
+\texttt{Lab1.ipynb}. Every number in this report comes from its saved output.
+
+\begin{center}\small
+\begin{tabular}{@{}p{0.25\linewidth}p{0.65\linewidth}@{}}
+\toprule
+Word & Meaning here\\
+\midrule
+step size & how far each update moves\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Problem and data}
+The problem in math, and the data (size, split, source).
+\begin{formulabox}
+\(\displaystyle \min_x\ f(x)=\tfrac12\|Ax-b\|_2^2+\lambda\|x\|_2^2\)
+\end{formulabox}
+
+\section{Step 1: Method name}
+\subsection*{Idea}
+One paragraph in plain words.
+\subsection*{Math and update rule}
+\[ x^{(k+1)} = x^{(k)} - t\,\nabla f(x^{(k)}) \]
+\subsection*{Method}
+\needspace{10\baselineskip}
+\begin{lstlisting}[style=pyStyle, caption={Gradient descent loop (logging left out).}]
+for k in range(max_iter):
+    x = x - t * grad(x)
+\end{lstlisting}
+\subsection*{Results}
+\begin{figure}[H]
+  \centering
+  % \includegraphics[width=0.75\linewidth]{fig1_convergence}
+  \fbox{\parbox[c][3cm][c]{0.6\linewidth}{\centering figs/fig1\_convergence.pdf}}
+  \caption{What the figure shows, and the one thing to notice.}
+\end{figure}
+Does it reach the Step-1 optimum? Say yes or no, with the number.
+
+\section{Comparing all methods}
+\begin{center}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Method & Iterations & Final error & Time (s)\\
+\midrule
+GD & 120 & \(1.2\times10^{-6}\) & 0.03\\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{Trade-offs.} Which method to pick and when.
+
+\section{Conclusion}
+Three or four sentences: what worked, what didn't, and why.
+
+\end{document}

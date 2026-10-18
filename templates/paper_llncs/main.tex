@@ -1,0 +1,54 @@
+%============================================================
+%  PAPER skeleton (Springer LNCS: \documentclass{llncs})
+%  Build:  tectonic main.tex      (tectonic fetches llncs.cls / splncs04.bst itself
+%          and runs BibTeX; with TeX Live use: latexmk -pdf main.tex)
+%  One file per section in sections/, figures in figures/, references in references.bib.
+%  Before submitting, fill the table in README.md (venue, page limit, blind or not).
+%  Traps: "~" is a non-breaking space, not "about" (write $\sim$1.8 or "about 1.8");
+%  type -- and --- rather than Unicode dashes; keep blind-review comments consistent.
+%============================================================
+\documentclass[runningheads]{llncs}
+\usepackage{iftex}
+\ifTUTeX\else
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\fi
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,shapes.geometric,backgrounds}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage[hidelinks]{hyperref}
+\usepackage{url}
+\renewcommand\UrlFont{\rmfamily}
+\raggedbottom
+
+\hypersetup{pdftitle={Title of the Paper}, pdfauthor={Your Name}}
+
+\begin{document}
+
+\title{Title of the Paper}
+\titlerunning{Short Title}
+\author{Your Name\inst{1} \and Second Author\inst{1,2}}
+\authorrunning{Y. Name et al.}
+\institute{University Name, City, Country\\
+  \email{you@example.edu} \and
+  Second Institution, City, Country}
+
+\maketitle
+
+\input{sections/abstract}
+\input{sections/introduction}
+\input{sections/related_work}
+\input{sections/method}
+\input{sections/evaluation}
+\input{sections/conclusion}
+
+\bibliographystyle{splncs04}
+\bibliography{references}
+
+\end{document}

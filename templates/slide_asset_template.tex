@@ -1,0 +1,39 @@
+%============================================================
+%  SLIDE ASSET template: one slide-sized LaTeX page to paste into Canva / PowerPoint
+%  Use it when the slides are not Beamer but you need clean math or a two-panel figure.
+%  Build and convert:
+%     tectonic slide_asset.tex
+%     pdftoppm -r 200 -png -singlefile slide_asset.pdf slide_asset
+%  Keep asset sources OUTSIDE .temp/ (e.g. <Course>/presentation/assets/) so they are
+%  versioned; .temp/ is ignored by git.
+%  Palette matches scripts/figstyle.py (use("slides")).
+%============================================================
+\documentclass{article}
+\usepackage[paperwidth=17in,paperheight=5.5in,margin=0.35in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{xcolor}
+\usepackage{iftex}
+\ifTUTeX\usepackage{fontspec}\fi
+\definecolor{bg}{HTML}{F7F9FC}
+\definecolor{navy}{HTML}{0E3A6B}
+\definecolor{org}{HTML}{E0782F}
+\definecolor{grey}{HTML}{5B6573}
+\pagecolor{bg}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\newcommand{\head}[2]{{\color{org}\Huge\bfseries #1}\ \ {\color{navy}\LARGE\bfseries #2}\par\vspace{10pt}}
+\newcommand{\note}[1]{{\color{grey}\Large #1}\par}
+
+\begin{document}
+\color{navy}\LARGE
+\begin{minipage}[t]{0.47\linewidth}
+  \head{1}{The update rule}
+  \[ x^{(k+1)} = x^{(k)} - t\,\nabla f\big(x^{(k)}\big) \]
+  \note{Move against the slope, a step of size $t$.}
+\end{minipage}\hfill{\color{navy}\vrule width 2pt}\hfill
+\begin{minipage}[t]{0.47\linewidth}
+  \head{2}{When it stops}
+  \[ \|\nabla f(x)\|_2 \le \varepsilon \]
+  \note{The ground is flat enough: we are at the bottom.}
+\end{minipage}
+\end{document}

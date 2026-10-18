@@ -1,0 +1,19 @@
+# Core: reading slides and PDFs
+pypdf>=4.0
+
+# Contact sheets of rendered pages (scripts/contact_sheet.py)
+pillow>=10.0
+
+# Checking numbers before they go in a sheet (scripts/check_template.py)
+numpy>=1.26
+scipy>=1.11
+
+# Lab notebooks and figures (scripts/nb_run.py, scripts/figstyle.py)
+matplotlib>=3.8
+nbformat>=5.9
+nbclient>=0.9
+ipykernel>=6.25
+
+# Optional, course-specific (uncomment what you need)
+# cvxpy>=1.4          # convex optimization labs
+# python-pptx>=0.6    # not needed: scripts/pptx_text.py uses the standard library

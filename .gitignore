@@ -1,0 +1,66 @@
+# Compiled PDFs are tracked on purpose (notes, reports, slides, past papers).
+# Only LaTeX build junk and local scratch is ignored. See AGENTS.md "Files and safety"
+# for the policy on photos and big reference books.
+
+# ---- LaTeX build artifacts ----
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.synctex(busy)
+*.synctex.gz(busy)
+*.nav
+*.snm
+*.vrb
+*.bbl
+*.blg
+*.bcf
+*.run.xml
+*.idx
+*.ind
+*.ilg
+*.glo
+*.gls
+*.glg
+*.acn
+*.acr
+*.alg
+*.xdv
+*.dvi
+*.ps
+.tectonic-cache/
+.latexmk/
+
+# ---- scratch (extracted text, rendered pages, check scripts, section builds) ----
+.temp/
+/tmp/
+*.tmp
+*.bak
+*~
+
+# ---- Python / Jupyter ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.ipynb_checkpoints/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# ---- editor / OS ----
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+*.code-workspace
+.vscode/*.log
+.vscode/.ropeproject
+.claude/settings.local.json

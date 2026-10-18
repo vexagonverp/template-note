@@ -1,0 +1,129 @@
+%============================================================
+%  TIỂU LUẬN template (Vietnamese essay / thesis-style report)
+%  Start one with:  scripts/new_note.sh <Course> essay-vi "Tên môn học" TieuLuan
+%  Build:  tectonic <file>.tex     (XeTeX only: Vietnamese comes from fontspec, no babel)
+%
+%  Choices that matter:
+%    - 13pt body: the standard "report" class silently ignores 13pt and falls back
+%      to 10pt, so this uses KOMA's scrreprt with fontsize=13pt.
+%    - Margins 30/20/25/25 mm, 1.5 line spacing, 1 cm first-line indent: the usual
+%      Vietnamese university format. Check your faculty's rules and adjust.
+%    - Vietnamese is not hyphenated like English, so hyphenation is switched off.
+%    - Put logo.png next to this file (the title page shows a box until you do).
+%============================================================
+\documentclass[a4paper,fontsize=13pt,oneside,numbers=noenddot,chapterprefix=true]{scrreprt}
+\usepackage{fontspec}
+\setmainfont{texgyretermes}[Extension=.otf, UprightFont=*-regular, BoldFont=*-bold,
+  ItalicFont=*-italic, BoldItalicFont=*-bolditalic]
+\usepackage{amsmath,amssymb}
+\usepackage[a4paper, left=30mm, right=20mm, top=25mm, bottom=25mm]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{indentfirst}
+\setlength{\parindent}{1cm}
+\usepackage[bottom]{footmisc}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage[hidelinks,bookmarks=false]{hyperref}
+\usepackage{tocbasic}
+
+% Vietnamese is not hyphenated the way English is.
+\hyphenpenalty=10000 \exhyphenpenalty=10000 \tolerance=3000 \emergencystretch=3em
+
+% ---- Vietnamese labels (set at \begin{document}, after KOMA sets its English ones) ----
+\AtBeginDocument{%
+  \renewcommand{\chaptername}{Chương}%
+  \renewcommand{\contentsname}{MỤC LỤC}%
+  \renewcommand{\bibname}{TÀI LIỆU THAM KHẢO}%
+  \renewcommand{\figurename}{Hình}%
+  \renewcommand{\tablename}{Bảng}}
+% Headings in the body font (KOMA defaults to sans), chapters centred:
+%   CHƯƠNG 1
+%   Title of the chapter
+\setkomafont{disposition}{\normalfont\bfseries}
+\renewcommand*{\chapterformat}{\MakeUppercase{\chaptername}~\thechapter\autodot}
+\RedeclareSectionCommand[beforeskip=0pt, afterskip=18pt, innerskip=6pt]{chapter}
+\renewcommand*{\raggedchapter}{\centering}
+\addtokomafont{chapter}{\Large}
+\addtokomafont{chapterprefix}{\large}
+\addtokomafont{section}{\large}
+\addtokomafont{subsection}{\itshape}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{2}
+
+% ---- who and what (edit these) ----
+\newcommand{\StudentName}{Your Name}
+\newcommand{\StudentID}{YOUR-ID}
+\newcommand{\CourseName}{Tên môn học}
+\newcommand{\CourseCode}{MÃ MÔN}
+\newcommand{\Major}{Ngành học}
+\newcommand{\EssayTitle}{TÊN ĐỀ TÀI TIỂU LUẬN}
+\newcommand{\University}{TRƯỜNG ĐẠI HỌC \dots}
+\newcommand{\Faculty}{KHOA \dots}
+
+%============================================================
+\begin{document}
+
+\begin{titlepage}
+  \centering
+  {\large\bfseries ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINH\par}
+  {\large\bfseries \University\par}
+  {\large\bfseries \Faculty\par}
+  \vspace{1.2cm}
+  \IfFileExists{logo.png}{\includegraphics[width=3cm]{logo.png}}{\fbox{\parbox[c][3cm][c]{3cm}{\centering logo.png}}}\par
+  \vspace{1.2cm}
+  {\LARGE\bfseries TIỂU LUẬN\par}
+  \vspace{4pt}
+  {\large Môn học: \CourseName\ (\CourseCode)\par}
+  \vspace{1cm}
+  {\Large\bfseries \EssayTitle\par}
+  \vfill
+  \begin{tabular}{@{}ll@{}}
+    Sinh viên thực hiện: & \StudentName\\
+    Mã số sinh viên: & \StudentID\\
+    Ngành: & \Major\\
+  \end{tabular}
+  \vfill
+  {\large Thành phố Hồ Chí Minh, năm \the\year\par}
+\end{titlepage}
+
+\pagenumbering{roman}
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+
+\chapter*{MỞ ĐẦU}
+\addcontentsline{toc}{chapter}{MỞ ĐẦU}
+\section*{1. Lý do chọn đề tài}
+\addcontentsline{toc}{section}{1. Lý do chọn đề tài}
+Nội dung \dots
+\section*{2. Mục đích và nhiệm vụ nghiên cứu}
+\addcontentsline{toc}{section}{2. Mục đích và nhiệm vụ nghiên cứu}
+\section*{3. Đối tượng và phạm vi nghiên cứu}
+\addcontentsline{toc}{section}{3. Đối tượng và phạm vi nghiên cứu}
+\section*{4. Phương pháp nghiên cứu}
+\addcontentsline{toc}{section}{4. Phương pháp nghiên cứu}
+\section*{5. Kết cấu của tiểu luận}
+\addcontentsline{toc}{section}{5. Kết cấu của tiểu luận}
+
+\chapter{Cơ sở lý luận}
+\section{Khái niệm}
+Trích dẫn theo kiểu tác giả (năm) \cite[tr.~187]{mac}.
+
+\chapter{Thực trạng và vận dụng}
+\section{Nội dung}
+
+\chapter*{KẾT LUẬN}
+\addcontentsline{toc}{chapter}{KẾT LUẬN}
+Tóm tắt kết quả \dots
+
+\begin{thebibliography}{99}
+\addcontentsline{toc}{chapter}{TÀI LIỆU THAM KHẢO}
+\item[] \textbf{Tài liệu tiếng Việt}
+\bibitem{mac} Tác giả (2021), \emph{Tên sách}, Nxb. Chính trị quốc gia, Hà Nội.
+\item[] \textbf{Tài liệu tiếng Anh}
+\bibitem{en1} Author, A. (2020), \emph{Book Title}, Publisher, City.
+\end{thebibliography}
+
+\end{document}

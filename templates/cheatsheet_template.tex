@@ -1,0 +1,235 @@
+%============================================================
+%  CHEAT SHEET template (dense, 2 columns, black and white)
+%  Use when the exam limits you to N sides of paper. Everything else in this repo
+%  assumes no page limit; this one trades explanation for density.
+%  Start one with:  scripts/new_note.sh <Course> cheatsheet "Course Name"
+%  Build:  tectonic <file>.tex
+%
+%  Tips: \footnotesize body, tables instead of prose, one formulas box per topic,
+%  no worked examples (point to the full sheet), \columnbreak to balance columns.
+%  Built from: <the full exam sheet>   <- keep this line updated
+%============================================================
+\documentclass[10pt,a4paper]{article}
+\usepackage[top=0.8cm,bottom=1.0cm,left=0.9cm,right=0.9cm,headsep=3pt,footskip=12pt]{geometry}
+% >>> SHARED PREAMBLE (templates/_exam_preamble.tex, do not edit here)
+% Shared preamble for every EXAM template (midterm, final, theory, question bank,
+% cheat sheet). Edit templates/_exam_preamble.tex, then run: python3 scripts/sync_preamble.py
+% That stamps it between the ">>> SHARED PREAMBLE" markers of each exam template.
+% \documentclass, geometry and the "who and what" block stay per template.
+\usepackage{setspace}
+\usepackage{amsmath,amssymb}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multicol}
+\usepackage{needspace}
+\usepackage{silence}
+\WarningFilter{LaTeX}{Command \showhyphens has changed}
+\usepackage{microtype}
+\usepackage{fancyhdr}
+% Fonts: tectonic runs XeTeX, so use fontspec (OpenType Latin Modern covers
+% accented names like "Trần Bảo Thành"). pdflatex falls back to the classic setup.
+\usepackage{iftex}
+\ifTUTeX
+  \usepackage{fontspec}
+\else
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{lmodern}
+\fi
+\usepackage{parskip}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,shapes.geometric,backgrounds}
+% bookmarks=false: math in a heading + PDF bookmarks hangs the compile forever
+\usepackage[hidelinks,bookmarks=false]{hyperref}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+
+% ---- spacing and page breaks ----
+\setstretch{1.05}
+\setlength{\parskip}{5pt}
+\setlength{\parindent}{0pt}
+\setlist[itemize]{itemsep=2pt,topsep=3pt,parsep=0pt}
+\setlist[enumerate]{itemsep=2pt,topsep=3pt,parsep=0pt}
+\raggedbottom
+\widowpenalty=10000 \clubpenalty=10000
+\displaywidowpenalty=10000 \predisplaypenalty=10000
+\setlength{\emergencystretch}{2em}
+
+% ---- section formatting (a heading never sits alone at the bottom of a page) ----
+\titleformat{\section}{\large\bfseries}{}{0pt}{\needspace{6\baselineskip}}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries}{}{0pt}{\needspace{5\baselineskip}}
+\titleformat{\subsubsection}{\normalsize\itshape\bfseries}{}{0pt}{\needspace{4\baselineskip}}
+\titlespacing{\section}{0pt}{14pt}{6pt}
+\titlespacing{\subsection}{0pt}{10pt}{4pt}
+\titlespacing{\subsubsection}{0pt}{6pt}{2pt}
+
+% ---- part banner: \examPart{Title}{subtitle} ----
+\newcommand{\examPart}[2]{\clearpage\begin{center}{\Large\bfseries #1}\\[3pt]{\normalsize #2}\end{center}\vspace{2pt}\hrule\vspace{6pt}}
+
+% ---- math shortcuts (add your own) ----
+\newcommand{\R}{\mathbb R}
+\newcommand{\sign}{\operatorname{sign}}
+\newcommand{\diag}{\operatorname{diag}}
+
+% ---- small inline helpers ----
+% \sref{L1 p46}            inline source tag, lighter than a box title
+% \gl{term:dot}            superscript link back to a glossary item with \label{term:dot}
+% \qtag{LIKELY}            tag badge: LIKELY, PAST EXAM A, PRACTICE, COMPUTE, TWIST, ...
+% \exam{Midterm + Final}   which exam a section is for (put it in the heading)
+% \lbl{What it is:}        bold run-in label for fixed-pattern blocks
+% \examcue{"quote"}        what the lecturer stressed, verbatim
+\newcommand{\sref}[1]{\textcolor{blue!50!black}{\small[#1]}}
+\newcommand{\gl}[1]{\textsuperscript{\textcolor{blue!50!black}{[\ref{#1}]}}}
+\newcommand{\qtag}[1]{{\setlength{\fboxsep}{1.5pt}\colorbox{black!10}{\scriptsize\bfseries\MakeUppercase{#1}}}}
+\newcommand{\exam}[1]{\ \textnormal{\small(#1)}}
+\newcommand{\lbl}[1]{\par\noindent\textbf{#1}\ }
+\newcommand{\examcue}[1]{\par\noindent\textcolor{red!55!black}{\textbf{Exam cue:}}\ \emph{#1}\par}
+
+% ---- plain boxes: white background, coloured streak on the left ----
+\tcbset{
+  streak/.style={
+    enhanced, breakable, colback=white, frame hidden, boxrule=0pt, arc=0pt,
+    left=8pt, right=3pt, top=3pt, bottom=3pt,
+    borderline west={3pt}{0pt}{#1},
+    before skip=8pt, after skip=8pt
+  },
+  streaktitle/.style 2 args={
+    streak=#1, title={#2}, attach title to upper, after title={\par\smallskip},
+    fonttitle=\small\bfseries\color{#1}
+  },
+  titled/.style 2 args={
+    enhanced, colback=#1!2, colframe=#1!45!black, boxrule=0.6pt, arc=2pt,
+    left=7pt, right=7pt, top=5pt, bottom=5pt, before skip=10pt, after skip=10pt,
+    colbacktitle=#1!45!black, coltitle=white, fonttitle=\bfseries, title={#2}
+  },
+  bw/.style={
+    enhanced, breakable, colback=white, colframe=black, boxrule=0.4pt, arc=2pt,
+    left=4pt, right=4pt, top=2pt, bottom=2pt, before skip=6pt, after skip=6pt
+  }
+}
+\newtcolorbox{qbox}{streak=black!70}
+\newtcolorbox{resultbox}{streak=black!45}
+\newtcolorbox{trapbox}{streaktitle={orange!80!black}{Traps}}
+\newtcolorbox{algobox}[1]{streaktitle={violet!70!black}{#1}}
+% defbox: the lecturer's exact wording for a definition / named list. \begin{defbox}{Lecture 2, slide 7}
+\newtcolorbox{defbox}[1]{streaktitle={teal!60!black}{Lecturer's definition \textnormal{\small(#1)}}}
+% proofbox: a proof written the way it should appear on the paper. \begin{proofbox}{Title}
+\newtcolorbox{proofbox}[1]{titled={orange}{Proof: #1\hfill{\normalfont\small copy this structure}}, breakable}
+
+% ---- question box: \begin{origbox}{Title}{Source, e.g. Pool \S2.1, p.~1} ----
+% Not breakable on purpose: a question should never split across pages.
+\newtcolorbox{origbox}[2]{titled={blue}{#1\hfill{\normalfont\small #2}}}
+
+% ---- guideline box: the recipe, written with letters so it works for any numbers ----
+\newtcolorbox{guidebox}{titled={red}{Step-by-step guideline\hfill{\normalfont\small works for any numbers}}, breakable}
+
+% ---- answer box: \begin{examsolbox}{Question 2.1} ----
+\newtcolorbox{examsolbox}[1]{titled={green}{Answer: #1\hfill{\normalfont\small what to write on the exam paper}}, breakable}
+
+% ---- theory-course boxes ----
+% notebox     black frame, print friendly (overview, decoders, case studies)
+% memobox     "Memorise this" ordered list / chain, with an optional title
+% scenariobox a situational / essay question with its answer skeleton
+% summarybox  the last-minute checklist at the end of every sheet
+% pitfallbox  exam-day pitfalls, gathered in one numbered list
+\newtcolorbox{notebox}{bw}
+\newtcolorbox{memobox}[1][Memorise this]{streaktitle={teal!60!black}{#1}}
+\newtcolorbox{scenariobox}[1]{titled={violet}{#1\hfill{\normalfont\small situational question}}, breakable}
+\newtcolorbox{summarybox}{titled={black}{Quick-reference summary\hfill{\normalfont\small last-minute checklist}}, breakable}
+\newtcolorbox{pitfallbox}{titled={orange}{Exam-day pitfalls\hfill{\normalfont\small read before you start}}, breakable}
+
+% ---- question bank: \Q{Q12}{\qtag{past exam A} Birthday attack on SHA-2} ----
+% then \begin{qbankbox} question only \end{qbankbox}, then Answer / Why / Trap / Also asked as
+\newcommand{\Q}[2]{\needspace{6\baselineskip}\subsection*{#1\quad #2}}
+\newtcolorbox{qbankbox}{streak=blue!50!black}
+
+% ---- step and iteration badges ----
+% \step{1}{Lagrangian}   -> red "STEP 1" badge + bold name on its own line
+% \iterhead{2}{at $(0.8,0)$:} -> blue "ITERATION 2" badge
+\newcommand{\step}[2]{\par\medskip\noindent{\setlength{\fboxsep}{2pt}\colorbox{red!55!black}{\textcolor{white}{\small\bfseries\,STEP #1\,}}}\ \ {\bfseries #2}\par\nobreak\smallskip}
+\newcommand{\iterhead}[2]{\par\medskip\noindent{\setlength{\fboxsep}{2pt}\colorbox{blue!45!black}{\textcolor{white}{\small\bfseries\,ITERATION #1\,}}}\ \ #2\par\nobreak\smallskip}
+
+% ---- code listings (black and white, prints well) ----
+\lstdefinestyle{pyStyle}{language=Python, basicstyle=\ttfamily\small, keywordstyle=\bfseries,
+  commentstyle=\itshape, stringstyle=\ttfamily, breaklines=true, frame=single, numbers=left,
+  numberstyle=\tiny, xleftmargin=15pt, captionpos=b, columns=fullflexible, keepspaces=true}
+\lstdefinestyle{cppStyle}{style=pyStyle, language=C++}
+
+% ---- TikZ styles for redrawing exam diagrams (block ciphers, pipelines, flows) ----
+\tikzset{
+  blk/.style={draw, minimum height=6.5mm, minimum width=11mm, font=\scriptsize, align=center, inner sep=2pt},
+  enc/.style={draw, thick, minimum height=9mm, minimum width=18mm, font=\scriptsize\bfseries, align=center},
+  xr/.style={draw, circle, minimum size=4.5mm, inner sep=0pt, font=\footnotesize},
+  kb/.style={draw, fill=black!10, minimum height=7mm, minimum width=15mm, font=\scriptsize, align=center, inner sep=2pt},
+  lb/.style={font=\scriptsize, align=center},
+  ar/.style={-{Stealth[length=1.6mm]}}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\cfoot{\small\thepage}
+\renewcommand{\headrulewidth}{0pt}
+% <<< SHARED PREAMBLE
+
+% ---- who and what (edit these) ----
+\newcommand{\StudentName}{Your Name}
+\newcommand{\StudentID}{YOUR-ID}
+\newcommand{\CourseName}{Course Name}
+\newcommand{\ExamName}{Cheat Sheet}
+\newcommand{\ExamInfo}{2 sides allowed}
+
+% ---- dense overrides (after the shared preamble) ----
+\setstretch{1.0}
+\setlength{\parskip}{2pt}
+\setlist[itemize]{itemsep=0pt,topsep=1pt,parsep=0pt,leftmargin=1.2em}
+\setlist[enumerate]{itemsep=0pt,topsep=1pt,parsep=0pt,leftmargin=1.4em}
+\titleformat{\section}{\small\bfseries}{}{0pt}{}[\titlerule]
+\titlespacing{\section}{0pt}{4pt}{2pt}
+\titleformat{\subsection}{\footnotesize\bfseries}{}{0pt}{}
+\titlespacing{\subsection}{0pt}{3pt}{1pt}
+\setlength{\columnsep}{10pt}
+\setlength{\columnseprule}{0.3pt}
+\tcbset{bw/.append style={before skip=3pt, after skip=3pt, left=2pt, right=2pt, top=1pt, bottom=1pt}}
+
+%============================================================
+\begin{document}
+\footnotesize
+\begin{center}
+  {\bfseries\normalsize \CourseName: \ExamName}\ \ \textbar\ \ \ExamInfo\ \ \textbar\ \ \StudentName\ (\StudentID)
+\end{center}
+\vspace{-6pt}
+
+\begin{multicols}{2}
+
+\section{Topic 1}
+\begin{notebox}
+\textbf{Formulas.} $\Delta x=-(\nabla^2f)^{-1}\nabla f$ \quad $x^+=x+\Delta x$
+\end{notebox}
+\begin{tabular}{@{}p{0.35\linewidth}p{0.58\linewidth}@{}}
+\toprule
+Term & Meaning\\
+\midrule
+A & \dots\\
+\bottomrule
+\end{tabular}
+
+\section{Topic 2}
+\begin{itemize}
+  \item Key fact, one line.
+  \item The trap, one line.
+\end{itemize}
+
+\columnbreak
+
+\section{Topic 3}
+\begin{enumerate}
+  \item Recipe step 1.
+  \item Recipe step 2.
+\end{enumerate}
+
+\end{multicols}
+\end{document}

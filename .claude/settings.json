@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tectonic:*)",
+      "Bash(pdfinfo:*)",
+      "Bash(pdftotext:*)",
+      "Bash(pdftoppm:*)",
+      "Bash(pdffonts:*)",
+      "Bash(sips:*)",
+      "Bash(python3 scripts/*)",
+      "Bash(.venv/bin/python scripts/*)",
+      "Bash(scripts/build.sh:*)",
+      "Bash(scripts/new_note.sh:*)",
+      "Bash(scripts/pdf_pages.sh:*)",
+      "Bash(scripts/photos_to_jpg.sh:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(wc:*)",
+      "Bash(head:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(mkdir -p .temp/*)"
+    ]
+  }
+}

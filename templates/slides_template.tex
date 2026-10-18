@@ -1,0 +1,135 @@
+%============================================================
+%  SLIDES template (Beamer, 16:9)
+%  Start one with:  scripts/new_note.sh <Course> slides "Course Name"
+%  Build:  tectonic <file>.tex
+%
+%  Conventions:
+%    % SAY:      presenter note under every frame (what you say out loud)
+%    % REPLACE   marks placeholder content that must be swapped for real content
+%    darkframe   for the title, a "hook" story, and the closing summary
+%    \analogy{}  one plain-words box per hard idea
+%  Frame arc: title -> hook -> roadmap -> problem -> question -> gap -> proposal ->
+%             plan -> risks -> summary -> references
+%  Register: academic but spoken; no em dashes, no contractions on slides.
+%============================================================
+\PassOptionsToPackage{table}{xcolor}   % enables \rowcolor / \rowcolors
+\documentclass[aspectratio=169,12pt]{beamer}
+% Lato. Under tectonic (XeTeX) load the TrueType files with fontspec, which also
+% covers Vietnamese; under pdflatex use the lato package.
+\usepackage{iftex}
+\ifTUTeX
+  \usepackage{fontspec}
+  \setsansfont{Lato}[Extension=.ttf, UprightFont=*-Regular, BoldFont=*-Bold,
+    ItalicFont=*-Italic, BoldItalicFont=*-BoldItalic]
+\else
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage[default]{lato}
+\fi
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins}
+
+% ---- who and what (edit these) ----
+\newcommand{\StudentName}{Your Name}
+\newcommand{\StudentID}{YOUR-ID}
+\newcommand{\CourseName}{Course Name}
+\title{Title of the Talk}
+\subtitle{One line that says what it is}
+\author{\StudentName\ (\StudentID)}
+\institute{\CourseName}
+\date{\today}
+
+% ---- palette ----
+\definecolor{ink}{HTML}{1D3557}
+\definecolor{accent}{HTML}{E76F51}
+\definecolor{slate}{HTML}{2D3748}
+\definecolor{mist}{HTML}{EDF2F7}
+\setbeamercolor{normal text}{fg=slate}
+\setbeamercolor{frametitle}{fg=ink}
+\setbeamercolor{title}{fg=white}
+\setbeamercolor{subtitle}{fg=white}
+\setbeamercolor{structure}{fg=accent}
+\setbeamerfont{frametitle}{size=\Large,series=\bfseries}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{itemize items}{\color{accent}\textbullet}
+\setbeamertemplate{frametitle}{%
+  \vspace{9pt}{\usebeamercolor[fg]{frametitle}\usebeamerfont{frametitle}\insertframetitle\par}%
+  \vspace{3pt}{\color{accent}\rule{1.7cm}{2.6pt}}\vspace{1pt}}
+\setbeamertemplate{footline}{%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=3.2ex,dp=1.2ex]{}%
+    \colorbox{mist}{\makebox[\dimexpr\paperwidth-2\fboxsep][l]{\scriptsize\color{slate}\hspace{1em}%
+    \insertshorttitle\hfill\insertframenumber/\inserttotalframenumber\hspace{1em}}}%
+  \end{beamercolorbox}}
+
+\newtcolorbox{plainbox}{enhanced, arc=4pt, boxrule=0pt, frame hidden, colback=mist,
+  coltext=ink, left=10pt, right=10pt, top=5pt, bottom=5pt,
+  borderline west={3.5pt}{0pt}{accent}}
+\newcommand{\analogy}[1]{\begin{plainbox}\textbf{\textcolor{accent}{In plain words.}}\ #1\end{plainbox}}
+\newcommand{\thead}[1]{\textbf{\textcolor{white}{#1}}}
+\newenvironment{darkframe}
+  {\setbeamercolor{background canvas}{bg=ink}\setbeamercolor{normal text}{fg=white}%
+   \usebeamercolor[fg]{normal text}\begin{frame}[plain]}
+  {\end{frame}}
+
+%============================================================
+\begin{document}
+
+\begin{darkframe}
+  \vfill
+  {\Huge\bfseries\inserttitle\par}\vspace{6pt}
+  {\large\color{accent}\insertsubtitle\par}\vspace{18pt}
+  {\normalsize\insertauthor\par\insertinstitute\par\insertdate}
+  \vfill
+\end{darkframe}
+% SAY: Good morning. Today I present ...
+
+\begin{darkframe}
+  \vfill
+  {\Large A short story that makes the problem real.}  % REPLACE
+  \vfill
+\end{darkframe}
+% SAY: Picture this ...
+
+\begin{frame}{The big picture}
+  \begin{enumerate}
+    \item What is the problem?   % REPLACE
+    \item What is missing today?
+    \item What do I propose?
+  \end{enumerate}
+  \analogy{One sentence a friend outside the field would understand.}  % REPLACE
+\end{frame}
+% SAY: Three things in this talk ...
+
+\begin{frame}{Comparing the options}
+  \centering\small
+  \rowcolors{2}{mist}{white}
+  \begin{tabular}{lll}
+    \rowcolor{ink}\thead{Approach} & \thead{Strength} & \thead{Weakness}\\
+    A & fast & inaccurate\\   % REPLACE
+    B & accurate & slow\\
+  \end{tabular}
+\end{frame}
+% SAY: Existing work splits into two camps ...
+
+\begin{darkframe}
+  \vfill
+  {\Large\bfseries Summary}\par\vspace{8pt}
+  \begin{itemize}
+    \item One-line takeaway.   % REPLACE
+  \end{itemize}
+  \vfill
+  {\color{accent}Thank you. Questions?}
+\end{darkframe}
+% SAY: To sum up ...
+
+\begin{frame}{References}
+  \footnotesize
+  \begin{enumerate}
+    \item[{[1]}] A. Author, ``Title,'' \emph{Venue}, 2026.   % REPLACE
+  \end{enumerate}
+\end{frame}
+
+\end{document}

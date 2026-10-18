@@ -1,0 +1,147 @@
+%============================================================
+%  RESEARCH PROPOSAL template
+%  Start one with:  scripts/new_note.sh <Course> proposal "Course Name"
+%    -> <Name>_<ID>_Proposal.tex, so the built PDF already has the submission name.
+%  Build:  tectonic <file>.tex
+%  Section order follows the usual proposal marking scheme; keep every section.
+%============================================================
+\documentclass[a4paper,12pt]{article}
+\usepackage[top=2.4cm,bottom=2.4cm,left=2.5cm,right=2.5cm]{geometry}
+% >>> SHARED PREAMBLE (templates/_report_preamble.tex, do not edit here)
+% Shared preamble for graded documents: lab reports, assignment reports, proposals,
+% exercise answers, English essays, presentation scripts. Edit
+% templates/_report_preamble.tex, then run: python3 scripts/sync_preamble.py
+% \documentclass, geometry, spacing and the "who and what" block stay per template.
+\usepackage{amsmath,amssymb}
+% Fonts: Times look. Under tectonic (XeTeX) use TeX Gyre Termes through fontspec,
+% which also covers Vietnamese names; newtxmath for matching math. pdflatex falls back
+% to newtxtext + newtxmath.
+\usepackage{iftex}
+\ifTUTeX
+  \usepackage{newtxmath}
+  \usepackage{fontspec}
+  \setmainfont{texgyretermes}[Extension=.otf, UprightFont=*-regular, BoldFont=*-bold,
+    ItalicFont=*-italic, BoldItalicFont=*-bolditalic]
+\else
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{newtxtext,newtxmath}
+\fi
+\usepackage{setspace}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{microtype}
+\usepackage{xurl}
+\setlength{\emergencystretch}{2em}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{needspace}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,shapes.geometric,shapes.multipart,backgrounds}
+\usepackage{fancyhdr}
+% bookmarks=false: math in a heading + PDF bookmarks hangs the compile forever
+\usepackage[hidelinks,bookmarks=false]{hyperref}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+
+% Figures live next to the .tex in figs/ (the notebook saves there too), so moving
+% the .tex and the notebook together never breaks a path.
+\graphicspath{{figs/}{../figs/}}
+
+% ---- boxes (black and white, print friendly) ----
+\newtcolorbox{notebox}{enhanced, breakable, colback=white, colframe=black, boxrule=0.4pt,
+  arc=2pt, left=5pt, right=5pt, top=3pt, bottom=3pt}
+\newtcolorbox{formulabox}[1][Key formulae]{enhanced, breakable, colback=white, colframe=black,
+  boxrule=0.6pt, arc=2pt, left=5pt, right=5pt, top=3pt, bottom=3pt,
+  title={\small\bfseries #1}, coltitle=black, colbacktitle=white}
+\newtcolorbox{resultbox}{enhanced, breakable, colback=black!5, frame hidden, boxrule=0pt,
+  arc=0pt, left=6pt, right=6pt, top=3pt, bottom=3pt}
+
+% ---- code listings: short excerpts with a caption, never whole files ----
+% \needspace{8\baselineskip} before a listing keeps it from splitting badly.
+\lstdefinestyle{pyStyle}{language=Python, basicstyle=\ttfamily\small, keywordstyle=\bfseries,
+  commentstyle=\itshape, breaklines=true, frame=single, numbers=left, numberstyle=\tiny,
+  xleftmargin=15pt, captionpos=b, columns=fullflexible, keepspaces=true}
+\lstdefinestyle{cppStyle}{style=pyStyle, language=C++}
+
+% ---- TikZ styles for architecture / pipeline diagrams ----
+\tikzset{
+  container/.style={draw, rounded corners=2pt, align=center, font=\small, inner sep=5pt,
+    minimum width=28mm, minimum height=10mm, fill=blue!4},
+  optional/.style={container, dashed, fill=white},
+  person/.style={draw, rounded corners=8pt, align=center, font=\small, fill=black!6, inner sep=5pt},
+  extsys/.style={container, fill=black!8},
+  lbl/.style={font=\scriptsize, align=center},
+  arr/.style={-{Stealth[length=2mm]}, thick}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\cfoot{\small\thepage}
+\renewcommand{\headrulewidth}{0pt}
+% <<< SHARED PREAMBLE
+
+% ---- who and what (edit these) ----
+\newcommand{\StudentName}{Your Name}
+\newcommand{\StudentID}{YOUR-ID}
+\newcommand{\CourseName}{Course Name}
+\newcommand{\School}{School of Computer Science and Engineering}
+\newcommand{\University}{University Name}
+
+\usepackage{parskip}
+\onehalfspacing
+
+\title{\vspace{-1.2cm}\bfseries Title of the Proposed Research}
+\author{\StudentName\\ \small Student ID: \StudentID\\ \small \School\\ \small \University\\
+  \small \CourseName\\ \small Research Proposal}
+\date{\today}
+
+%============================================================
+\begin{document}
+\maketitle
+\noindent\textbf{Keywords:} keyword one, keyword two, keyword three.
+
+\section{Introduction}
+The problem, why it matters, and who it affects.
+\section{Background and related work}
+What exists, grouped by approach, and the gap none of them closes \cite{ref1}.
+\section{Research question and hypothesis}
+\textbf{RQ:} One question. \quad \textbf{H:} One testable claim.
+\section{Objectives}
+\begin{enumerate}
+  \item Objective 1 --- deliverable: \dots
+  \item Objective 2 --- deliverable: \dots
+\end{enumerate}
+\section{Proposed methodology}
+Design, data, tools, and how success is measured.
+\section{Work plan}
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+Months & Activity\\
+\midrule
+1--2 & Literature review, data collection\\
+3--4 & Implementation\\
+5--6 & Evaluation, writing\\
+\bottomrule
+\end{tabular}
+\end{center}
+\section{Required resources}
+Hardware, software, data, people.
+\section{Risks}
+\begin{itemize}
+  \item Risk --- mitigation.
+\end{itemize}
+\section{Expected outcomes}
+What will exist at the end, and who can use it.
+
+\begin{thebibliography}{9}
+\bibitem{ref1} A. Author, ``Title,'' \emph{Venue}, 2024.
+\end{thebibliography}
+\end{document}

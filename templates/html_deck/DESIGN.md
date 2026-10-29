@@ -11,6 +11,7 @@ python3 scripts/html_deck.py designs                                   # list de
 python3 scripts/html_deck.py design <deck.html> <name>                 # restyle a deck
 python3 scripts/html_deck.py upgrade <deck.html>                       # latest engine, keep slides
 python3 scripts/html_deck.py artifact <deck.html>                      # copy for claude.ai, only if the user asks for a link
+python3 scripts/html_deck.py shots <deck.html> [3:1 ...]              # PNG of every slide + contact sheets
 ```
 
 Presenting: Right / Space = next step, Left = back, **S = slide panel** (thumbnails on the
@@ -25,7 +26,7 @@ Styles (colors, fonts, extra parts) live in `docs/design/<name>/`; visual and de
 | Region | What goes there |
 |--------|-----------------|
 | `DESIGN`, `DESIGN-PARTS` | the design language: tokens, then part overrides. Filled from `docs/design/<name>/style.css` (split at its `/* @@PARTS */` line); do not edit by hand in a deck. |
-| `DECK-CSS` | parts only this deck needs (a diagram, a phone mock-up). Colors and fonts come from tokens only. |
+| `DECK-CSS` | parts only this deck needs (a diagram, a phone mock-up). Colors and fonts come from tokens only. Pick class names that cannot clash with state classes used by your diagrams. |
 | `SLIDES` | one `<section class="slide" data-id="..." data-title="...">` per slide. |
 | `DECK-JS` | `Deck.register(id, { steps, init, render })` for animated slides. |
 

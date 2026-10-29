@@ -8,14 +8,22 @@
   html_deck.py artifact <deck.html> [out.html]          the part to publish as a claude.ai artifact
                                                         (lists local images to publish as files)
   html_deck.py designs                                  list design languages
+  html_deck.py shots <deck.html> [out_dir] [slide:step ...]
+                                                        headless-Chrome PNG of every slide at its
+                                                        last step, plus any slide:step you name
+                                                        (step 0 = first), and contact sheets
 
 A deck has five regions between markers: DESIGN and DESIGN-PARTS (filled from
 docs/design/<name>/style.css, split at its /* @@PARTS */ line), DECK-CSS,
 SLIDES and DECK-JS (yours).
 Everything else is the shared engine and comes from the template.
 """
+import os
 import re
+import shutil
+import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -76,6 +84,47 @@ def set_title(text, title):
     return re.sub(r"<title>.*?</title>", lambda m: f"<title>{title}</title>", text, count=1)
 
 
+CHROME = ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+          "google-chrome", "chromium", "chromium-browser", "chrome"]
+# appended to a copy of the deck: ?s=<slide>&k=<step|last> jumps there and hides the key hint
+JUMP = """<script>(()=>{const q=new URLSearchParams(location.search);if(q.has('s')){
+document.getElementById('hint').style.display='none';
+setTimeout(()=>Deck.go(+q.get('s')-1,q.get('k')==='last'?'last':+q.get('k')),50);}})();</script>"""
+
+
+def shots(deck, out, extra):
+    """Screenshot slides with headless Chrome. The copy gets a <base> pointing at the deck's
+    folder, so relative images (../../assets/media/...) still load from out/."""
+    chrome = next((c for c in CHROME if os.path.exists(c) or shutil.which(c)), None)
+    if not chrome:
+        sys.exit("no Chrome/Chromium found")
+    text = deck.read_text()
+    n = len(re.findall(r'<section class="slide[\s"]', text))
+    out.mkdir(parents=True, exist_ok=True)
+    copy = out / "_shot.html"
+    base = f'<base href="{deck.parent.resolve().as_uri()}/">'
+    copy.write_text(text.replace('<meta charset="utf-8">', '<meta charset="utf-8">' + base, 1) + JUMP)
+    jobs = [(f"s{i:02d}_last", i, "last") for i in range(1, n + 1)]
+    for x in extra:
+        sl, st = x.split(":")
+        jobs.append((f"s{int(sl):02d}_k{st}", int(sl), st))
+
+    def one(job):
+        name, sl, st = job
+        subprocess.run([chrome, "--headless=new", "--disable-gpu", "--hide-scrollbars",
+                        "--window-size=1600,940", "--virtual-time-budget=4000",
+                        f"--screenshot={out / (name + '.png')}", f"{copy.as_uri()}?s={sl}&k={st}"],
+                       capture_output=True, timeout=60)
+    with ThreadPoolExecutor(6) as ex:
+        list(ex.map(one, jobs))
+    copy.unlink()
+    pngs = sorted(str(p) for p in out.glob("s*.png"))
+    subprocess.run([sys.executable, str(ROOT / "scripts/contact_sheet.py"), "--cols", "3", "--per", "12",
+                    "--out", str(out / "grids"), *pngs], capture_output=True)
+    print(f"{n} slides, {len(jobs)} shots in {out}/ ; contact sheets in {out}/grids/")
+    print("check: nothing clipped or overlapping (corner objects vs long titles), text at least 16px")
+
+
 def main(argv):
     if len(argv) < 2 or argv[1] in ("-h", "--help"):
         print(__doc__.strip()); return
@@ -125,6 +174,11 @@ def main(argv):
         print(out)
         for k, v in files.items():
             print(f"  file {k} <- {v}")
+    elif cmd == "shots":
+        deck = Path(argv[2])
+        rest = argv[3:]
+        out = Path(rest.pop(0)) if rest and ":" not in rest[0] else ROOT / ".temp" / "shots" / deck.stem
+        shots(deck, out, rest)
     else:
         sys.exit(__doc__.strip())
 

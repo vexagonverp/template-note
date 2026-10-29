@@ -43,7 +43,7 @@ existing style folder such as `docs/design/block-shapes/` as a model, and
    `DEFAULT_DESIGN` in `scripts/html_deck.py` (the only place it is set).
 7. **Apply** when asked: `python3 scripts/html_deck.py design <deck.html> <name>`. If the
    deck has its own parts (DECK-CSS), check they use tokens only and still read well;
-   re-screenshot one animated slide, then open the local deck (`open <deck.html>`).
+   re-screenshot with `python3 scripts/html_deck.py shots <deck.html>`, then open the local deck.
 
 Report: the concept in one line, the contrast table result, what changed in decks, and the
 preview path. Do not commit unless asked.

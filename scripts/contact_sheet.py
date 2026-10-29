@@ -25,10 +25,11 @@ def main():
     ap.add_argument("--cols", type=int, default=4)
     ap.add_argument("--per", type=int, default=16, help="pages per grid image")
     ap.add_argument("--width", type=int, default=420, help="tile width in px")
+    ap.add_argument("--out", default=None, help="output folder (default .temp/grids)")
     a = ap.parse_args()
     files = sorted(a.images)
     root = pathlib.Path(__file__).resolve().parent.parent
-    out = root / ".temp" / "grids"
+    out = pathlib.Path(a.out) if a.out else root / ".temp" / "grids"
     out.mkdir(parents=True, exist_ok=True)
     for g in range(0, len(files), a.per):
         chunk = files[g:g + a.per]

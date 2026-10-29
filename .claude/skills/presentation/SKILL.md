@@ -23,8 +23,9 @@ shows up literally as a placeholder, take these from the user's message, or ask.
 Read `docs/design/README.md` first (audience, hierarchy, color, diagrams, examples), then follow
 `templates/html_deck/DESIGN.md`: one everyday running example, every operation
 animated one step per press with a caption and a counter, every state checked by a script
-in `<Course>/presentation/checks/`. Look at it once in headless Chrome, then publish the
-`html_deck.py artifact` copy so the user also has a link. Do not generate the deck with
+in `<Course>/presentation/checks/`. Look at it once in headless Chrome, then open the local file
+for the user (`open <deck.html>`). Do not publish it as a claude.ai artifact unless the user
+asks for a link. Do not generate the deck with
 Canva's AI; it invents vague content and wrong diagrams.
 
 **Beamer or Canva:**

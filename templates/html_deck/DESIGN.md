@@ -10,7 +10,7 @@ DECK_DESIGN=<name> scripts/new_note.sh <Course> deck "Course Name"     # pick a 
 python3 scripts/html_deck.py designs                                   # list designs
 python3 scripts/html_deck.py design <deck.html> <name>                 # restyle a deck
 python3 scripts/html_deck.py upgrade <deck.html>                       # latest engine, keep slides
-python3 scripts/html_deck.py artifact <deck.html>                      # copy to publish on claude.ai
+python3 scripts/html_deck.py artifact <deck.html>                      # copy for claude.ai, only if the user asks for a link
 ```
 
 Presenting: Right / Space = next step, Left = back, **S = slide panel** (thumbnails on the

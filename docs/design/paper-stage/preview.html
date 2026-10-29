@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- @@ARTIFACT-START -->
+<title>Paper and Stage Preview</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<!--
+  HTML DECK TEMPLATE (stop-motion slides)
+  Start one with:  scripts/new_note.sh <Course> deck "Course Name" [Descriptor]
+  Pick a design:   DECK_DESIGN=<name> scripts/new_note.sh ...   (docs/design/<name>/)
+  Rules and parts: templates/html_deck/DESIGN.md
+
+  Present: open in a browser. Right / Space = next step, Left = back, S = slide panel,
+  F = full screen, Home / End. Click: left quarter goes back, anywhere else forward.
+
+  Edit only the four marked regions: DESIGN (tokens, swapped by new_note.sh),
+  DECK-CSS (this deck's own parts), SLIDES, DECK-JS (custom animated slides).
+  The engine between them is shared by every deck; change it in the template.
+-->
+<style>
+/* @@DESIGN-START */
+/* Design language: Paper & Stage
+   Punchy kinetic-typography slides for 16:9 decks. Slides alternate between a warm
+   off-white "paper" world (the default slide) and a pitch-black "stage" world (add class
+   "stage" to a slide), with a hard cut between them. One red key word per phrase, revealed
+   word by word with a small overshoot; everything else is ink, white or grey. Paper cut-out
+   objects with soft contact shadows, a pinned grey card, big soft grey arcs, halftone
+   figures on black, small technical labels in the corners.
+   Contrast (checked): ink/paper 14.8, muted/paper 5.4, red #E8505B/paper 3.3 (large text
+   only: key words and headlines), red #E8202A/black 4.5, white/black 20.4, grey #A8A8A8/black
+   8.6, ink/card-grey 5.9. Small text is never red. */
+@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;700;800;900&family=Manrope:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap");
+:root {
+  /* palette */
+  --paper-world: #F6F2EA;
+  --stage-black: #050505;
+  --ink-paper: #1F1F1F;
+  --white: #FFFFFF;
+  --red-flat: #E8505B;     /* red on paper (flat) */
+  --red-glow: #E8202A;     /* red on black (with glow) */
+  --prop-grey: #9A9A9A;    /* pinned card */
+  --arc-grey: #BDBAB4;     /* arcs, grid, resting lines */
+  /* roles: paper world (default) */
+  --chrome: var(--stage-black);
+  --card: var(--paper-world);
+  --paper: #E9E3D8;        /* quiet fill: a darker sheet of the same paper */
+  --ink: var(--ink-paper);
+  --muted: #66625B;
+  --line: var(--arc-grey);
+  --accent: var(--red-flat);
+  --on-accent: var(--ink-paper);
+  --tint: #E9E3D8;
+  --go: var(--ink-paper);
+  --on-go: var(--white);
+  --stop: var(--prop-grey);
+  --on-stop: var(--ink-paper);
+  --pop: var(--prop-grey);
+  --shadow: rgba(31, 31, 31, .28);
+  --glow: rgba(232, 32, 42, .75);
+  --display: "Inter Tight", "Manrope", "Helvetica Neue", Arial, sans-serif;
+  --body: "Inter Tight", "Manrope", "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --radius: 6px;
+  --radius-sm: 4px;
+  --stage-radius: 0px;
+  --title-weight: 800;
+  --title-tracking: -.03em;
+  color-scheme: light;
+}
+/* @@DESIGN-END */
+
+/* ================= engine: stage, transitions, panel, footer ================= */
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--chrome, var(--paper)); color: var(--ink); font-family: var(--body);
+  overflow: hidden; padding-block: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-font-smoothing: antialiased;
+}
+#viewport { height: 100%; display: grid; place-items: center; transition: padding-left .3s ease; }
+body.panel-open #viewport { padding-left: 290px; }
+#frame { position: relative; }
+#stage {
+  position: absolute; left: 0; top: 0; width: var(--stage-w, 1600px); height: var(--stage-h, 900px); transform-origin: 0 0;
+  background: var(--card); border-radius: var(--stage-radius, 18px); overflow: hidden; cursor: pointer;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 8%, transparent), 0 12px 40px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.slide {
+  position: absolute; inset: 0; padding: 70px 100px 90px; display: flex; flex-direction: column; gap: 22px; color: var(--ink);
+  opacity: 0; visibility: hidden; transform: translateX(90px);
+  transition: opacity .45s ease, transform .5s cubic-bezier(.25,.8,.25,1), visibility 0s .5s;
+}
+.slide.past { transform: translateX(-90px); }
+.slide.active { opacity: 1; visibility: visible; transform: none; transition: opacity .45s ease, transform .5s cubic-bezier(.25,.8,.25,1); }
+[data-step] { opacity: 0; transform: translateY(14px); transition: opacity .35s ease, transform .35s ease; }
+[data-step].on { opacity: 1; transform: none; }
+
+#foot { position: absolute; left: 100px; right: 100px; bottom: 30px; display: flex; align-items: center;
+  justify-content: space-between; font: 600 18px var(--body); color: var(--muted); pointer-events: none; z-index: 5; }
+#dots { display: flex; gap: 8px; }
+#dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); transition: background .2s; }
+#dots i.on { background: var(--accent); }
+#count { font-variant-numeric: tabular-nums; }
+
+#hint { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  font: 500 14px var(--body); color: var(--muted); background: var(--card); padding: 8px 14px; border-radius: 999px;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--ink) 12%, transparent); transition: opacity .6s; white-space: nowrap; z-index: 30; }
+#hint.hide { opacity: 0; pointer-events: none; }
+kbd { font: 600 12px var(--mono); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; }
+
+#panel-btn { position: fixed; z-index: 30; top: calc(14px + env(safe-area-inset-top, 0px)); left: calc(14px + env(safe-area-inset-left, 0px));
+  font: 600 14px var(--body); color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  padding: 8px 12px; cursor: pointer; opacity: .55; transition: opacity .2s; }
+#panel-btn:hover, #panel-btn:focus-visible, body.panel-open #panel-btn { opacity: 1; }
+#panel-btn:focus-visible, .thumb:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+#panel { position: fixed; z-index: 20; top: 0; bottom: 0; left: 0; width: 270px; background: var(--card);
+  border-right: 1px solid var(--line); padding: calc(64px + env(safe-area-inset-top, 0px)) 14px 20px calc(14px + env(safe-area-inset-left, 0px));
+  overflow-y: auto; transform: translateX(-105%); transition: transform .3s ease; box-sizing: border-box; }
+body.panel-open #panel { transform: none; }
+#panel-list { display: flex; flex-direction: column; gap: 12px; }
+.thumb { display: grid; grid-template-columns: 22px 1fr; gap: 6px 8px; align-items: start; background: none; border: 0;
+  padding: 6px; border-radius: 10px; cursor: pointer; text-align: left; font: 600 13px var(--body); color: var(--muted); }
+.thumb .num { padding-top: 2px; font-variant-numeric: tabular-nums; }
+.thumb .mini { position: relative; width: var(--thumb-w, 200px); height: var(--thumb-h, 112.5px); overflow: hidden; border-radius: 8px; background: var(--card);
+  border: 2px solid var(--line); box-sizing: content-box; }
+.thumb .t { grid-column: 2; line-height: 1.25; }
+.thumb.now { background: var(--tint); color: var(--ink); }
+.thumb.now .mini { border-color: var(--accent); }
+.thumb .slide.clone { opacity: 1; visibility: visible; transform: scale(var(--thumb-s, .125)); transform-origin: 0 0; width: var(--stage-w, 1600px); height: var(--stage-h, 900px);
+  transition: none; pointer-events: none; }
+.thumb .slide.clone * { transition: none !important; animation: none !important; }
+
+/* ================= shared parts (use these in slides) ================= */
+.eyebrow { font: 700 18px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; letter-spacing: var(--title-tracking); }
+h2 { font-size: 62px; line-height: 1.05; font-weight: var(--title-weight); }
+.lede { font-size: 30px; line-height: 1.35; color: var(--muted); margin: 0; max-width: 1250px; }
+.lede b { color: var(--ink); }
+p { margin: 0; }
+code { font: 600 .85em var(--mono); background: var(--paper); padding: 2px 7px; border-radius: 6px; }
+
+.title-slide { justify-content: flex-start; }
+.title-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 60px; }
+.title-slide h1 { font-size: 150px; line-height: .92; font-weight: var(--title-weight); }
+.title-slide h1 span { color: var(--accent); }
+.title-col { width: 440px; flex: none; border-top: 1px solid var(--ink); padding-top: 16px; display: flex; flex-direction: column; gap: 14px; }
+.title-col .lede { font-size: 26px; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 24px; font: 600 20px var(--body); color: var(--muted); }
+
+.points { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 22px; }
+.points li { font: 500 34px/1.3 var(--body); padding-left: 44px; position: relative; max-width: 1250px; }
+.points li::before { content: ""; position: absolute; left: 0; top: 16px; width: 22px; height: 12px; border-radius: 3px; background: var(--accent); }
+
+.cards { display: grid; gap: 22px; }
+.cards.two { grid-template-columns: repeat(2, 1fr); }
+.cards.three { grid-template-columns: repeat(3, 1fr); }
+.card { border: 2px solid var(--paper); background: var(--card); border-radius: var(--radius); padding: 26px 30px;
+  display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.card h3 { font-size: 30px; font-weight: 700; }
+.card p { font-size: 25px; line-height: 1.35; color: var(--muted); }
+.card .tag { font: 700 16px var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.card .n { font: 800 64px/1 var(--display); color: var(--accent); }
+.card.dark { background: var(--ink); border-color: var(--ink); }
+.card.dark h3 { color: var(--card); }
+.card.dark p { color: var(--line); }
+
+/* table: rows can reveal with data-step */
+.grid-table { display: grid; grid-template-columns: repeat(var(--cols, 3), auto); font-size: 26px; border-radius: 14px; overflow: hidden; }
+.grid-table > div { display: contents; }
+.grid-table span { padding: 17px 22px; border-bottom: 2px solid var(--paper); transition: opacity .35s; }
+.grid-table .th span { font: 700 17px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); background: var(--paper); border: 0; }
+.grid-table .row span:first-child { font-weight: 700; }
+.grid-table .mono { font-family: var(--mono); font-size: .9em; }
+.grid-table .row.win span { background: var(--tint); }
+.grid-table .row.win span:first-child { color: var(--accent); }
+.grid-table .row[data-step] { opacity: 1; transform: none; }
+.grid-table .row[data-step]:not(.on) span { opacity: 0; }
+
+/* code: lines light up with data-at="k" on step k */
+pre.code { margin: 0; background: var(--ink); color: var(--card); border-radius: var(--radius); padding: 30px 34px; font: 500 25px/1.75 var(--mono); overflow-x: auto; }
+pre.code span { display: block; padding: 0 10px; margin: 0 -10px; border-radius: 6px; transition: background .25s; }
+pre.code span.hl { background: color-mix(in srgb, var(--accent) 45%, var(--ink)); }
+pre.code i { font-style: normal; color: var(--line); }
+.rule { font-size: 30px; line-height: 1.3; padding: 18px 22px; border-radius: 12px; border: 2px solid var(--paper); transition: background .25s, border-color .25s; }
+.rule.hl { background: var(--tint); border-color: var(--accent); }
+
+/* caption bar under an animated diagram: .cap text and .counter chip */
+.capbar { display: flex; align-items: center; justify-content: space-between; gap: 30px; min-height: 92px;
+  border-top: 2px solid var(--paper); padding-top: 18px; margin-top: auto; }
+.cap { font: 500 32px/1.3 var(--body); max-width: 1050px; }
+.cap b { color: var(--accent); }
+.counter { font: 700 22px var(--mono); background: var(--paper); padding: 12px 18px; border-radius: 10px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.counter:empty { visibility: hidden; }
+
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: start; }
+.big-q { font: var(--title-weight) 130px/1 var(--display); }
+
+/* tiles: flat squares, each holding one big shape. Colors come from role tokens, so any
+   design can use them. Tile color .t-*, shape color .s-*, shape .circle .half .arch
+   .triangle .stair .band .ellipse .eye, crop with .crop-l/-r/-t/-b, enlarge with .huge.
+   Text on a tile: one big number or word only (.big). */
+.tiles { display: grid; grid-template-columns: repeat(var(--cols, 3), 1fr); }
+.tile { position: relative; overflow: hidden; aspect-ratio: 1; background: var(--t, var(--ink)); }
+.tile .big { position: absolute; left: 28px; top: 18px; z-index: 1; font: var(--title-weight) 110px/1 var(--display); color: var(--on-t, var(--card)); }
+.t-ink { --t: var(--ink); --on-t: var(--card); }
+.t-card { --t: var(--card); --on-t: var(--ink); }
+.t-accent { --t: var(--accent); --on-t: var(--on-accent, var(--card)); }
+.t-tint { --t: var(--tint); --on-t: var(--ink); }
+.t-go { --t: var(--go); --on-t: var(--on-go, var(--card)); }
+.t-stop { --t: var(--stop); --on-t: var(--on-stop, var(--card)); }
+.t-pop { --t: var(--pop, var(--accent)); --on-t: var(--ink); }
+.s-ink { --s: var(--ink); } .s-card { --s: var(--card); } .s-accent { --s: var(--accent); } .s-tint { --s: var(--tint); }
+.s-go { --s: var(--go); } .s-stop { --s: var(--stop); } .s-pop { --s: var(--pop, var(--accent)); }
+.shape { position: absolute; background: var(--s, var(--card)); }
+.circle { inset: 14%; border-radius: 50%; }
+.half { left: 0; right: 0; bottom: 0; height: 50%; border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
+.arch { left: 22%; right: 22%; top: 14%; bottom: 0; border-radius: 999px 999px 0 0; }
+.triangle { inset: 12%; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.stair { inset: 0; clip-path: polygon(0 100%, 0 66.7%, 33.3% 66.7%, 33.3% 33.3%, 66.7% 33.3%, 66.7% 0, 100% 0, 100% 100%); }
+.band { inset: 0; clip-path: polygon(0 62%, 62% 0, 100% 0, 100% 38%, 38% 100%, 0 100%); }
+.ellipse { left: 0; right: 0; top: 24%; bottom: 24%; border-radius: 50%; }
+.eye { left: 20%; top: 20%; width: 60%; height: 60%; border-radius: 0 100%; rotate: -45deg; }
+.eye::after { content: ""; position: absolute; inset: 31%; border-radius: 50%; background: var(--t, var(--ink)); }
+.crop-l { translate: -38% 0; } .crop-r { translate: 38% 0; } .crop-t { translate: 0 -38%; } .crop-b { translate: 0 38%; }
+.huge { scale: 1.45; }
+/* tile layouts: a band under the title, or a column of 3 tiles on the right edge */
+.tile-band { position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(6, 1fr); }
+.tile-col { position: absolute; top: 0; right: 0; bottom: 0; width: 300px; display: grid; grid-template-rows: repeat(3, 1fr); }
+.tile-col .tile { aspect-ratio: auto; }
+.slide.tiled-right { padding-right: 400px; }
+.slide.tiled-right.active ~ #foot { right: 400px; }
+.slide.tiled-bottom.active ~ #foot { opacity: 0; }
+#foot { transition: opacity .3s, right .3s; }
+
+/* cut-out objects from assets/media/objects (any design): drop in with a small bounce and a
+   soft contact shadow. <div class="cutout"><img src="<path>/objects/dice.png" alt="dice"></div>
+   Add .corner-object to pin a small one to the top-right corner. A design sets --shadow
+   (transparent = flat, no shadow). */
+.cutout { position: relative; align-self: center; display: grid; place-items: center; }
+.cutout svg, .cutout img { width: 300px; height: auto; filter: drop-shadow(0 22px 18px var(--shadow, rgba(0, 0, 0, .25))); }
+.cutout::after { content: ""; width: 300px; height: 34px; margin-top: 8px; border-radius: 50%; background: var(--shadow, rgba(0, 0, 0, .25)); filter: blur(14px); opacity: .8; }
+.slide.active .cutout:not([data-step]), .cutout[data-step].on { animation: drop-in .7s cubic-bezier(.3, 1.5, .5, 1) both; }
+.cutout[data-step].on { opacity: 1; transform: none; transition: none; }
+@keyframes drop-in { 0% { opacity: 0; transform: translateY(-160px); } 60% { opacity: 1; transform: translateY(10px); } 100% { transform: none; } }
+.corner-object { position: absolute; right: 64px; top: 52px; }
+.corner-object img { width: auto; height: 124px; max-width: 190px; rotate: 5deg; }
+.corner-object::after { width: 70%; height: 14px; margin-top: 0; }
+
+/* @@DESIGN-PARTS-START */
+/* ---- the two worlds: a slide with class "stage" is the black world ---- */
+.slide { background: var(--card); isolation: isolate; }
+.slide.stage {
+  --card: var(--stage-black); --paper: #161616; --tint: #1E1E1E; --ink: var(--white); --muted: #A8A8A8;
+  --line: #3A3A3A; --accent: var(--red-glow); --on-accent: var(--stage-black); --go: var(--white);
+  --on-go: var(--stage-black); --stop: #6E6E6E; --on-stop: var(--white); --pop: #2A2A2A; --shadow: rgba(0, 0, 0, .6);
+}
+/* hard cut between slides, a slow gentle push-in while a slide is on screen */
+.slide, .slide.past, .slide.active { transition: none; transform: none; }
+.slide.active { animation: ps-push 10s ease-out both; }
+@keyframes ps-push { from { scale: 1; } to { scale: 1.025; } }
+
+/* ---- type: one bold geometric sans, tight, centered ---- */
+h1, h2 { font-weight: 800; letter-spacing: -.03em; line-height: .98; }
+.slide > h2, .slide > .eyebrow, .slide > .lede { text-align: center; align-self: center; }
+.eyebrow { color: var(--muted); font-weight: 700; letter-spacing: .18em; }
+.lede { color: var(--muted); }
+.lede b, .cap b { color: var(--ink); }
+.card .tag { color: var(--muted); }
+.card .n { color: var(--ink); }
+.title-slide h1 span { color: var(--accent); }
+
+/* phrase: the words pop in by themselves, one after another, when the slide (or the phrase,
+   if it has data-step) appears. No press per word.
+   <p class="phrase"><span class="w">Each</span><span class="w">lane</span><span class="w key">skips</span></p>
+   Exactly one .key per phrase. style="--d:.5s" on the phrase delays the start. */
+.phrase { margin: auto 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: .06em .26em;
+  font: 800 112px/1 var(--display); letter-spacing: -.03em; text-align: center; color: var(--ink); }
+.split .phrase { justify-content: flex-start; text-align: left; font-size: 96px; }
+.phrase .w { display: inline-block; }
+.phrase .w:nth-child(2) { --i: 1; } .phrase .w:nth-child(3) { --i: 2; } .phrase .w:nth-child(4) { --i: 3; }
+.phrase .w:nth-child(5) { --i: 4; } .phrase .w:nth-child(6) { --i: 5; } .phrase .w:nth-child(7) { --i: 6; }
+.phrase[data-step] { opacity: 1; transform: none; }
+.phrase[data-step]:not(.on) .w { opacity: 0; }
+.slide.active .phrase:not([data-step]) .w, .slide.active .phrase[data-step].on .w {
+  animation: ps-word .38s cubic-bezier(.34, 1.9, .5, 1) both; animation-delay: calc(var(--d, .15s) + var(--i, 0) * .12s); }
+@keyframes ps-word { from { opacity: 0; transform: scale(.35); } to { opacity: 1; transform: none; } }
+.phrase .key { color: var(--accent); font-size: 1.22em; font-weight: 900; }
+.stage .phrase .key { text-shadow: 0 0 .32em var(--glow); }
+.slide.stage.active .phrase:not([data-step]) .key, .slide.stage.active .phrase[data-step].on .key {
+  animation: ps-word .38s cubic-bezier(.34, 1.9, .5, 1) both, ps-pulse 1s ease-out both;
+  animation-delay: calc(var(--d, .15s) + var(--i, 0) * .12s), calc(var(--d, .15s) + var(--i, 0) * .12s + .3s); }
+@keyframes ps-pulse { 0% { text-shadow: 0 0 .32em var(--glow); } 35% { text-shadow: 0 0 .9em var(--glow), 0 0 .2em var(--glow); } 100% { text-shadow: 0 0 .32em var(--glow); } }
+/* optional manual control: data-step on single words still reveals them one press each */
+.phrase .w[data-step] { opacity: 0; transform: scale(.35); }
+.phrase .w[data-step].on { opacity: 1; transform: none; transition: transform .34s cubic-bezier(.34, 1.9, .5, 1), opacity .1s; }
+
+/* ---- technical labels: corner marks, frame code, barcode ---- */
+.hud { position: absolute; inset: 34px; pointer-events: none; z-index: 2; font: 700 15px var(--display); letter-spacing: .08em; color: var(--muted); }
+.hud i { position: absolute; width: 34px; height: 34px; border: 0 solid var(--muted); }
+.hud i:nth-child(1) { left: 0; top: 0; border-left-width: 2px; border-top-width: 2px; }
+.hud i:nth-child(2) { right: 0; top: 0; border-right-width: 2px; border-top-width: 2px; }
+.hud i:nth-child(3) { left: 0; bottom: 0; border-left-width: 2px; border-bottom-width: 2px; }
+.hud i:nth-child(4) { right: 0; bottom: 0; border-right-width: 2px; border-bottom-width: 2px; }
+.hud .code { position: absolute; left: 50px; top: 8px; }
+.hud .code2 { position: absolute; right: 50px; top: 8px; }
+.hud .barcode { position: absolute; right: 50px; bottom: 40px; width: 120px; height: 26px;
+  background: repeating-linear-gradient(90deg, var(--muted) 0 2px, transparent 2px 4px, var(--muted) 4px 5px, transparent 5px 9px, var(--muted) 9px 12px, transparent 12px 14px); }
+.grid-bg { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .45;
+  background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 64px 64px; }
+
+/* ---- big soft grey arcs sweeping through the frame ---- */
+.arcs { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.arcs::before, .arcs::after { content: ""; position: absolute; border-radius: 50%; border: 110px solid var(--line); opacity: .5; filter: blur(1.5px); }
+.arcs::before { width: 1500px; height: 1500px; left: -760px; bottom: -900px; }
+.arcs::after { width: 1100px; height: 1100px; right: -700px; top: -520px; border-width: 70px; }
+
+/* ---- halftone figure on black: dots fading out ---- */
+.halftone { width: 520px; height: 520px; max-width: 100%; align-self: center; flex: none;
+  background: radial-gradient(circle, var(--ink) 34%, transparent 37%) 0 0 / 16px 16px;
+  -webkit-mask: radial-gradient(closest-side, #000 25%, transparent 100%); mask: radial-gradient(closest-side, #000 25%, transparent 100%); }
+
+/* ---- grey paper card pinned with a glossy red push-pin ---- */
+.pin-card { position: relative; align-self: center; width: min(760px, 100%); box-sizing: border-box; background: var(--pop); color: var(--ink);
+  padding: 64px 52px 46px; border-radius: 3px; rotate: -1.6deg; box-shadow: 0 2px 0 var(--shadow), 0 30px 40px -18px var(--shadow); }
+.pin-card::before { content: ""; position: absolute; left: 50%; top: 18px; width: 38px; height: 38px; margin-left: -19px; border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, var(--white) 0 9%, var(--red-flat) 24%, var(--red-glow) 55%, #7A0E14 100%);
+  box-shadow: 2px 8px 10px var(--shadow); }
+.slide.active .pin-card:not([data-step]), .pin-card[data-step].on { animation: drop-in .7s cubic-bezier(.3, 1.5, .5, 1) both; }
+/* an image pin replaces the drawn one: <img class="pin" src=".../objects/push-pin.png" alt=""> */
+.pin-card:has(> .pin)::before { display: none; }
+.pin-card:has(> .pin) { margin-top: 34px; }
+.pin-card > .pin { position: absolute; left: 50%; top: -46px; width: 84px; translate: -50% 0; rotate: 14deg;
+  filter: grayscale(1) drop-shadow(3px 10px 8px var(--shadow)); }
+.pin-card h3 { font: 800 50px/1 var(--display); letter-spacing: -.03em; margin: 0 0 24px; }
+.pin-card ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
+.pin-card li { display: flex; align-items: center; gap: 18px; font: 600 32px/1.2 var(--body); }
+.pin-card svg { width: 40px; height: 40px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* images are shown in grey tone: the shared objects keep their own colors, this style
+   removes them (red stays for the key word only) */
+.slide img { filter: grayscale(1); }
+.slide img.logo { filter: none; }   /* a school or client logo keeps its real colors */
+.cutout svg, .cutout img { filter: grayscale(1) drop-shadow(0 22px 18px var(--shadow)); }
+/* cut-out objects (.cutout, .corner-object) come from the engine; the corner object takes
+   the place of the top-right label */
+.slide:has(.corner-object) .hud .code2 { display: none; }
+
+/* ---- glossy emoji for the punchline slide ---- */
+.emoji-pop { align-self: center; font: 200px/1 "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  filter: drop-shadow(0 26px 22px var(--shadow)); }
+.slide.active .emoji-pop:not([data-step]), .emoji-pop[data-step].on { animation: ps-word .45s cubic-bezier(.34, 1.9, .5, 1) both; }
+.emoji-pop[data-step].on { opacity: 1; transform: none; transition: none; }
+
+/* ---- clean, original phone UI on black ---- */
+.mock-phone { align-self: center; width: 330px; height: 660px; border-radius: 46px; background: var(--paper); padding: 18px; box-sizing: border-box; flex: none;
+  box-shadow: 0 0 0 2px var(--line); }
+.mock-phone .scr { height: 100%; border-radius: 32px; background: var(--card); padding: 44px 20px 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; }
+.mock-phone .bar { height: 46px; border-radius: 23px; background: var(--paper); }
+.mock-phone .row { display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; border-radius: 14px; background: var(--paper); font: 600 19px var(--body); color: var(--ink); }
+.mock-phone .row b { font-weight: 800; }
+.mock-phone .row.hit { box-shadow: inset 0 0 0 2px var(--accent); }
+
+/* shared parts, toned down to ink and grey */
+.card { border-color: var(--paper); }
+.card.dark { background: var(--ink); border-color: var(--ink); }
+.card.dark h3 { color: var(--card); }
+.card.dark p { color: var(--line); }
+.grid-table .row.win span:first-child { color: var(--ink); }
+.counter { background: var(--paper); }
+#dots i.on { background: var(--ink); }   /* red is for key words only */
+/* @@DESIGN-PARTS-END */
+
+/* @@DECK-CSS-START */
+/* @@DECK-CSS-END */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0s !important; animation: none !important; }
+}
+</style>
+
+<button id="panel-btn" type="button" aria-controls="panel" aria-expanded="false">☰ Slides <kbd>S</kbd></button>
+<nav id="panel" aria-label="All slides"><div id="panel-list"></div></nav>
+
+<div id="viewport"><div id="frame"><div id="stage" role="region" aria-label="Slides" tabindex="0">
+<!-- @@SLIDES-START -->
+<section class="slide" data-id="s1" data-title="Opening question (paper)">
+  <div class="arcs"></div><div class="hud"><i></i><i></i><i></i><i></i><span class="code">01 · OPENING</span><span class="code2">PAPER &amp; STAGE</span><span class="barcode"></span></div>
+  <div class="eyebrow">Advanced Data Structures · Seminar</div>
+  <p class="phrase"><span class="w">Finding</span><span class="w">one</span><span class="w">price</span><span class="w">takes</span><span class="w key">forever?</span></p>
+</section>
+
+<section class="slide stage" data-id="s2" data-title="The idea (stage)">
+  <div class="hud"><i></i><i></i><i></i><i></i><span class="code">02 · IDEA</span><span class="code2">PAPER &amp; STAGE</span><span class="barcode"></span></div>
+  <div class="split" style="align-items:center;flex:1">
+    <div class="halftone"></div>
+    <p class="phrase"><span class="w">Not</span><span class="w">with</span><span class="w key">express</span><span class="w">lanes</span></p>
+  </div>
+</section>
+
+<section class="slide" data-id="s3" data-title="Cut-out object (paper)">
+  <div class="grid-bg"></div><div class="hud"><i></i><i></i><i></i><i></i><span class="code">03 · LEVELS</span><span class="code2">PAPER &amp; STAGE</span><span class="barcode"></span></div>
+  <div class="split" style="align-items:center;flex:1;grid-template-columns:.8fr 1.2fr">
+    <div class="cutout"><img src="../../../assets/media/objects/arrow-up-right.png" alt="Paper arrow pointing up and ahead"></div>
+    <p class="phrase" style="--d:.55s"><span class="w">Each</span><span class="w">lane</span><span class="w key">skips</span><span class="w">ahead</span></p>
+  </div>
+</section>
+
+<section class="slide" data-id="s4" data-title="Pinned card (paper)">
+  <div class="arcs"></div><div class="hud"><i></i><i></i><i></i><i></i><span class="code">04 · SUMMARY</span><span class="code2">PAPER &amp; STAGE</span><span class="barcode"></span></div>
+  <h2>Three operations</h2>
+  <div class="pin-card">
+    <h3>Skip list</h3>
+    <ul><li><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>Search in about log n steps</li><li><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>Insert: link it in, flip a coin</li><li><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Delete: unhook it on every lane</li></ul>
+  </div>
+</section>
+
+<section class="slide stage" data-id="s5" data-title="Real world (stage)">
+  <div class="hud"><i></i><i></i><i></i><i></i><span class="code">05 · REAL WORLD</span><span class="code2">PAPER &amp; STAGE</span><span class="barcode"></span></div>
+  <div class="split" style="align-items:center;flex:1;grid-template-columns:.8fr 1.2fr">
+    <div class="mock-phone"><div class="scr">
+      <div class="bar"></div>
+      <div class="row"><span>Price</span><b>30k - 60k</b></div>
+      <div class="row hit"><span>USB cable</span><b>30k</b></div>
+      <div class="row hit"><span>Coffee mug</span><b>40k</b></div>
+      <div class="row hit"><span>Notebook</span><b>50k</b></div>
+      <div class="row hit"><span>Water bottle</span><b>60k</b></div>
+    </div></div>
+    <p class="phrase" style="--d:.35s"><span class="w">Like</span><span class="w">your</span><span class="w">price</span><span class="w key">filter</span></p>
+  </div>
+</section>
+
+<section class="slide" data-id="s6" data-title="Punchline (paper)">
+  <div class="grid-bg"></div><div class="hud"><i></i><i></i><i></i><i></i><span class="code">06 · TAKEAWAY</span><span class="code2">PAPER &amp; STAGE</span><span class="barcode"></span></div>
+  <div class="emoji-pop">🚀</div>
+  <p class="phrase" style="--d:.45s"><span class="w">About</span><span class="w key">40</span><span class="w">steps</span><span class="w">for</span><span class="w">a million</span></p>
+</section>
+<!-- @@SLIDES-END -->
+<div id="foot"><span id="deckname"></span><div id="dots"></div><span id="count"></span></div>
+</div></div></div>
+<div id="hint"><kbd>→</kbd> or <kbd>Space</kbd> next · <kbd>←</kbd> back · <kbd>S</kbd> slides · <kbd>F</kbd> full screen</div>
+
+<script>
+/* ================= engine (shared by every deck) =================
+   Deck.register(slideId, { steps, init(slideEl), render(step, slideEl) })
+     steps  : number of presses on that slide (or omit to count data-step / data-at)
+     init   : runs once at start (build DOM for the animation)
+     render : runs on every step change; draw the state for `step` (must work going backwards)
+*/
+window.Deck = (() => {
+  const ctl = {};
+  let slides = [], cur = 0, step = 0;
+  const $ = s => document.querySelector(s);
+
+  const titleOf = s => s.dataset.title || (s.querySelector("h1, h2") || {}).textContent || "";
+  function stepCount(sl) {
+    const c = ctl[sl.dataset.id];
+    if (c && c.steps) return typeof c.steps === "function" ? c.steps() : c.steps;
+    let n = 0;
+    sl.querySelectorAll("[data-step]").forEach(e => n = Math.max(n, +e.dataset.step));
+    sl.querySelectorAll("[data-at]").forEach(e => n = Math.max(n, +e.dataset.at));
+    return n + 1;
+  }
+  function apply(sl, st) {
+    sl.querySelectorAll("[data-step]").forEach(e => e.classList.toggle("on", st >= +e.dataset.step));
+    sl.querySelectorAll("[data-at]").forEach(e => e.classList.toggle("hl", st === +e.dataset.at));
+    const c = ctl[sl.dataset.id];
+    if (c && c.render) c.render(st, sl);
+  }
+
+  function buildPanel() {
+    const list = $("#panel-list"); list.innerHTML = "";
+    slides.forEach((s, i) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "thumb" + (i === cur ? " now" : "");
+      b.innerHTML = `<span class="num">${i + 1}</span><div class="mini"></div><span class="t"></span>`;
+      b.querySelector(".t").textContent = titleOf(s);
+      const c = s.cloneNode(true);
+      c.classList.add("active", "clone"); c.classList.remove("past");
+      c.removeAttribute("data-id");
+      c.querySelectorAll("[id]").forEach(e => e.removeAttribute("id"));
+      c.querySelectorAll("[data-step]").forEach(e => e.classList.add("on"));
+      b.querySelector(".mini").appendChild(c);
+      b.addEventListener("click", e => { e.stopPropagation(); go(i, 0); });
+      list.appendChild(b);
+    });
+    const now = list.querySelector(".now");
+    if (now) now.scrollIntoView({ block: "nearest" });
+  }
+  function togglePanel(force) {
+    const open = force ?? !document.body.classList.contains("panel-open");
+    document.body.classList.toggle("panel-open", open);
+    $("#panel-btn").setAttribute("aria-expanded", open);
+    if (open) buildPanel();
+    setTimeout(fit, 0); setTimeout(fit, 320);
+  }
+
+  function show() {
+    slides.forEach((s, i) => { s.classList.toggle("active", i === cur); s.classList.toggle("past", i < cur); });
+    apply(slides[cur], step);
+    const total = stepCount(slides[cur]);
+    $("#dots").innerHTML = total > 1 ? Array.from({ length: total }, (_, i) => `<i class="${i <= step ? "on" : ""}"></i>`).join("") : "";
+    $("#count").textContent = `${cur + 1} / ${slides.length}`;
+    if (document.body.classList.contains("panel-open")) {
+      document.querySelectorAll(".thumb").forEach((t, i) => t.classList.toggle("now", i === cur));
+      const now = document.querySelector(".thumb.now"); if (now) now.scrollIntoView({ block: "nearest" });
+    }
+    try { history.replaceState(null, "", "#slide-" + (cur + 1)); } catch (e) {}
+  }
+  function go(i, st) { cur = Math.max(0, Math.min(slides.length - 1, i)); step = st === "last" ? stepCount(slides[cur]) - 1 : st; show(); }
+  function next() { step < stepCount(slides[cur]) - 1 ? (step++, show()) : cur < slides.length - 1 && go(cur + 1, 0); }
+  function prev() { step > 0 ? (step--, show()) : cur > 0 && go(cur - 1, "last"); }
+
+  // stage size comes from --stage-w / --stage-h (a design or deck can make it 9:16)
+  let SW = 1600, SH = 900;
+  function measure() {
+    const cs = getComputedStyle($("#stage"));
+    SW = parseFloat(cs.width) || 1600; SH = parseFloat(cs.height) || 900;
+    const tw = SW >= SH ? 200 : 120, r = document.documentElement.style;
+    r.setProperty("--thumb-w", tw + "px"); r.setProperty("--thumb-h", tw * SH / SW + "px"); r.setProperty("--thumb-s", tw / SW);
+  }
+  function fit() {
+    const panel = document.body.classList.contains("panel-open") ? 290 : 0;
+    const vw = document.documentElement.clientWidth - 32 - panel, vh = window.innerHeight - 24;
+    const s = Math.max(0.05, Math.min(vw / SW, vh / SH));
+    $("#frame").style.width = SW * s + "px"; $("#frame").style.height = SH * s + "px";
+    $("#stage").style.transform = `scale(${s})`;
+  }
+
+  function start() {
+    slides = [...document.querySelectorAll("#stage > .slide")];
+    $("#deckname").textContent = document.title;
+    for (const s of slides) { const c = ctl[s.dataset.id]; if (c && c.init) c.init(s); if (c && c.render) c.render(0, s); }
+    const hint = $("#hint"); let t = setTimeout(() => hint.classList.add("hide"), 6000);
+    const poke = () => { hint.classList.add("hide"); clearTimeout(t); };
+    document.addEventListener("keydown", e => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const k = e.key;
+      if (["ArrowRight", "ArrowDown", " ", "PageDown", "Enter"].includes(k)) { if (k === "Enter" && e.target.closest("button")) return; e.preventDefault(); poke(); next(); }
+      else if (["ArrowLeft", "ArrowUp", "PageUp", "Backspace"].includes(k)) { e.preventDefault(); poke(); prev(); }
+      else if (k === "Home") go(0, 0);
+      else if (k === "End") go(slides.length - 1, "last");
+      else if (k === "s" || k === "S") { poke(); togglePanel(); }
+      else if (k === "Escape") togglePanel(false);
+      else if (k === "f" || k === "F") {
+        const el = document.documentElement;
+        if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen().catch(() => {});
+        else if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+      }
+    });
+    $("#stage").addEventListener("click", e => {
+      poke(); const r = e.currentTarget.getBoundingClientRect();
+      (e.clientX - r.left < r.width * 0.25) ? prev() : next();
+    });
+    $("#panel-btn").addEventListener("click", () => { poke(); togglePanel(); });
+    measure(); window.addEventListener("resize", fit); fit();
+    const m = /^#slide-(\d+)$/.exec(location.hash);
+    go(m ? +m[1] - 1 : 0, 0);
+  }
+  return { register: (id, c) => { ctl[id] = c; }, start, go };
+})();
+</script>
+
+<script>
+/* @@DECK-JS-START */
+/* @@DECK-JS-END */
+Deck.start();
+</script>
+<!-- @@ARTIFACT-END -->
+</html>

@@ -1,7 +1,7 @@
 ---
 name: presentation
-description: Prepare a presentation, either Beamer slides or assets for Canva/PowerPoint slides, plus a slide-by-slide speaking script with timings, study notes and backup answers to likely questions. Use when the user has to present a paper, project or proposal.
-argument-hint: <CourseFolder> <minutes> [paper.pdf] [beamer|canva]
+description: Prepare a presentation, either an HTML stop-motion deck (default for algorithm and data-structure talks), Beamer slides, or assets for Canva/PowerPoint slides, plus a slide-by-slide speaking script with timings, study notes and backup answers to likely questions. Use when the user has to present a paper, project or proposal.
+argument-hint: <CourseFolder> <minutes> [paper.pdf] [deck|beamer|canva]
 ---
 
 # Presentation: slides and script
@@ -16,6 +16,18 @@ shows up literally as a placeholder, take these from the user's message, or ask.
 - Note every number you will put on a slide, and where it comes from (figure or table).
 
 ## 2. Create
+
+**HTML deck (default when the talk explains an algorithm or data structure):**
+`[DECK_DESIGN=<name>] scripts/new_note.sh <Course> deck "<Course display name>" <Descriptor>`
+(styles in `docs/design/`, default `paper-stage`; a new look via `/design-language`).
+Read `docs/design/README.md` first (audience, hierarchy, color, diagrams, examples), then follow
+`templates/html_deck/DESIGN.md`: one everyday running example, every operation
+animated one step per press with a caption and a counter, every state checked by a script
+in `<Course>/presentation/checks/`. Look at it once in headless Chrome, then publish the
+`html_deck.py artifact` copy so the user also has a link. Do not generate the deck with
+Canva's AI; it invents vague content and wrong diagrams.
+
+**Beamer or Canva:**
 
 ```bash
 scripts/new_note.sh <Course> script "<Course display name>"     # always

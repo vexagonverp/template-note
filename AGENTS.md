@@ -23,11 +23,14 @@ notes end up as one open-book reference sheet the student prints and brings to t
 templates/          one template per document type (see "Pick the template" below)
   _exam_preamble.tex    shared preamble of every exam template
   _report_preamble.tex  shared preamble of every graded-document template
+  html_deck/            HTML stop-motion deck template + DESIGN.md (styles live in docs/design/)
 _course_template/   copied for each new course (folders + COURSE.md)
 assets/logo.png     university logo; templates show it with \UniLogo[height], found from any depth
+assets/media/       style-free images (original colors), icons, shapes, textures any style can use (README lists sources; drop new files in inbox/)
 scripts/            setup, new document, build, read sources, notebooks, checks, packaging
 .claude/skills/     task skills (/exam-final, /theory-notes, /audit-sheet, ...), read by Claude and Copilot
 docs/               sheet anatomy, writing style, LaTeX traps, workflows
+  design/             design reference (README.md) + one folder per design style (refs/ = inspiration images)
 <Course>/           one folder per course (see _course_template/README.md)
 ```
 
@@ -48,6 +51,7 @@ for one task; this file holds the rules that apply to all of them.
 | `/audit-sheet <file.tex>` | independent adversarial audit, fresh context, no edits |
 | `/graded-report <Course> <kind>` | lab report + notebook, report, proposal, exercise, essay |
 | `/presentation <Course> <min>` | slides or slide assets + speaking script |
+| `/design-language <name> <look>` | create or apply a visual design language for decks (see `docs/design/README.md`) |
 | `/tutor <question>` | solve one question by hand in chat, no files |
 
 When you add a skill: one folder per skill, lowercase-hyphen name matching the folder,
@@ -74,6 +78,7 @@ substituted.
 | `exercise` | a short homework / exercise answer sheet |
 | `essay-en` / `essay-vi` | an English essay / a Vietnamese tiểu luận (13pt, VN margins) |
 | `slides` / `script` / `asset` | Beamer slides / a presentation script / a slide-sized image for Canva |
+| `deck` | an HTML slide deck with step-by-step animated diagrams (preferred for algorithm talks; see `templates/html_deck/DESIGN.md`) |
 | `paper` | a Springer LNCS paper (folder with sections/, figures/, references.bib) |
 
 The exam templates share `_exam_preamble.tex` and the graded templates share
@@ -179,7 +184,7 @@ words, short sentences, no filler, few em dashes. Register depends on the docume
 spoken and plain for exam sheets, lab reports and scripts; academic third person for
 reports, proposals, essays and papers. If a draft reads like AI output, run a humanizer
 pass over the prose. Do not "fix" small imperfections the user added by hand on purpose;
-flag them instead. Details: `docs/WRITING_STYLE.md`.
+flag them instead. Details: `docs/WRITING_STYLE.md`. Visual rules (type, color, contrast, diagrams): `docs/design/README.md`.
 
 ## Building
 

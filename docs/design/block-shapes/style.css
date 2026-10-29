@@ -1,0 +1,83 @@
+/* Design language: Block Shapes
+   Bauhaus-inspired geometric modernism. Slides sit on a strict grid of flat color tiles,
+   each holding one oversized primitive shape (circle, half-circle, arch, triangle, stair,
+   diagonal band, ellipse, eye), often cropped by the tile edge. Giant condensed black
+   headlines against small, light, widely spaced body text. Flat color only: no outlines,
+   gradients, textures, shadows or rounded cards.
+   Tiles and shapes: .tiles / .tile-band / .tile-col, .tile.t-*, .shape.<name>.s-* (engine).
+   Pairs that read: ink tile + tint shape, tint + ink, accent + tint or card, pop + ink,
+   go + card or ink, stop + ink. Never two neighboring tiles in the same color.
+   Contrast (checked): ink/card 18.7, muted/card 8.9, accent/card 8.1, card/accent 8.1,
+   ink/tint 9.8, ink/go 4.7, ink/stop 4.8, ink/pop 7.1. Text never violet on marigold (4.3). */
+@import url("https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Jost:wght@300;400;500;600&family=JetBrains+Mono:wght@500;700&display=swap");
+:root {
+  /* palette */
+  --white: #FFFFFF;
+  --black: #121212;
+  --marigold: #F2B01E;
+  --violet: #5E3F8F;
+  --pink: #EA7BAE;
+  --red-orange: #E8492C;
+  --sage: #5E8A68;
+  /* roles (what the engine and every deck use) */
+  --chrome: var(--black);     /* around the stage */
+  --paper: var(--white);      /* quiet fills */
+  --card: var(--white);       /* slide surface, text areas */
+  --ink: var(--black);        /* headlines, shapes, tiles, rules */
+  --muted: #4A4A4A;           /* secondary text, 8.9:1 on white */
+  --line: var(--black);       /* rules and resting arrows */
+  --accent: var(--violet);    /* current step, path, highlights */
+  --on-accent: var(--white);
+  --tint: var(--marigold);    /* highlight fill behind ink text */
+  --go: var(--sage);          /* found, in range */
+  --on-go: var(--black);
+  --stop: var(--red-orange);  /* rejected, too far */
+  --on-stop: var(--black);
+  --pop: var(--pink);         /* extra tile color */
+  --shadow: transparent;     /* flat: cut-outs cast no shadow */
+  --display: "Anton", "Bebas Neue", Impact, "Arial Narrow Bold", sans-serif;
+  --body: "Jost", "Josefin Sans", "Century Gothic", "Avenir Next", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --radius: 0px;
+  --radius-sm: 0px;
+  --stage-radius: 0px;
+  --title-weight: 400;        /* Anton has one weight; it is already heavy */
+  --title-tracking: .005em;
+  color-scheme: light;
+}
+/* @@PARTS */
+/* headlines: huge, condensed, uppercase, tight leading */
+h1, h2, h3 { text-transform: uppercase; line-height: .9; }
+h2 { font-size: 92px; }
+.title-slide h1 { font-size: 230px; }
+.big-q { text-transform: uppercase; font-size: 150px; }
+/* body: light geometric sans, wide line spacing, narrow column */
+.lede { font-weight: 300; font-size: 27px; line-height: 1.6; max-width: 820px; color: var(--ink); }
+.lede b { font-weight: 500; }
+.eyebrow { font-weight: 500; font-size: 16px; letter-spacing: .22em; }
+.meta { font-weight: 300; font-size: 18px; color: var(--muted); }
+.points li { font-weight: 300; line-height: 1.5; }
+.points li::before { width: 16px; height: 16px; border-radius: 50%; top: 16px; }
+/* cards become text blocks under a thin rule; the dark card gets a thick accent bar */
+.card { border: 0; border-top: 2px solid var(--ink); border-radius: 0; padding: 20px 0 0; background: transparent; }
+.card h3 { font-size: 40px; letter-spacing: .01em; }
+.card p { font-weight: 300; line-height: 1.55; color: var(--ink); }
+.card .tag { color: var(--accent); font-weight: 500; }
+.card .n { font-weight: 400; }
+.card.dark { background: transparent; border-top: 12px solid var(--accent); }
+.card.dark h3, .card.dark p { color: var(--ink); }
+/* tables, code, captions: square, flat, thin black rules */
+.grid-table { border-radius: 0; }
+.grid-table span { border-bottom: 1px solid var(--ink); font-weight: 300; }
+.grid-table .th span { background: var(--ink); color: var(--card); font-weight: 500; }
+.grid-table .row span:first-child { font-weight: 500; }
+.grid-table .row.win span:first-child { color: var(--ink); }
+pre.code { border-radius: 0; }
+code { background: var(--tint); color: var(--ink); border-radius: 0; }
+.rule { border: 0; border-top: 1px solid var(--ink); border-radius: 0; font-weight: 300; }
+.capbar { border-top: 1px solid var(--ink); }
+.cap { font-weight: 300; }
+.cap b { font-weight: 500; }
+.counter { background: var(--tint); color: var(--ink); border-radius: 0; }
+#dots i { border-radius: 0; }
+.thumb .mini { border-radius: 0; }

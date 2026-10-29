@@ -53,6 +53,7 @@ scripts/build.sh --preview Calculus/notes/JaneDoe_S1234567_Final_ExamSheet.tex
 | `slides` | `slides_template.tex` | Beamer 16:9 slides with presenter notes |
 | `script` | `presentation_script_template.tex` | what to say, slide by slide |
 | `asset` | `slide_asset_template.tex` | a slide-sized math image for Canva / PowerPoint |
+| `deck` | `html_deck/deck_template.html` | HTML slide deck with step-by-step animated diagrams (`DECK_DESIGN=<style>`) |
 | `paper` | `paper_llncs/` | Springer LNCS paper folder |
 
 Each template has a built PDF next to it, so you can see what it looks like. Title pages show
@@ -79,6 +80,7 @@ templates share `templates/_exam_preamble.tex`; the graded ones share
 ```
 AGENTS.md                     rules every agent follows
 assets/logo.png               university logo on every title page (swap or delete it)
+assets/media/                 style-free images, icons, shapes, textures for decks (README lists sources)
 .claude/skills/               one skill per task, used by Claude Code and Copilot (see below)
 CLAUDE.md                     Claude Code entry point: @AGENTS.md
 .claude/settings.json         Claude Code: allowlist for the build/read commands (no rm)
@@ -87,6 +89,7 @@ CLAUDE.md                     Claude Code entry point: @AGENTS.md
 .vscode/                      LaTeX Workshop builds with tectonic; recommended extensions
 .editorconfig  .gitignore  requirements.txt
 templates/                    every template + shared preambles + lab notebook + paper folder
+  html_deck/                  HTML stop-motion deck template + DESIGN.md
 _course_template/             copied for each new course (COURSE.md + folders)
 scripts/
   setup.sh                    your name and ID everywhere; --venv for Python packages
@@ -101,6 +104,8 @@ scripts/
   apply_patches.py            many exact replacements, each must match once, dry run first
   figstyle.py                 shared matplotlib style + save() for report/slide figures
   package_submission.sh       hand-in folder + zip in <Course>/submit/
+  html_deck.py                new deck, switch its design style, artifact copy
+  contrast.py  cutout.py      check a style's color contrast; cut an object out of its background
 
 docs/
   SHEET_ANATOMY.md   page order and boxes for every exam template
@@ -108,6 +113,7 @@ docs/
   LATEX_TRAPS.md     hangs, missing glyphs, broken figure paths, ignored options, ...
   WORKFLOWS.md       recipes: reading sources, transcripts, checks, labs, hangs, patches
   LOCAL_LLM.md       running the agent rules with a local model
+  design/            visual rules (README.md) + one folder per deck style (paper-stage, block-shapes)
 ```
 
 ## Skills
@@ -125,7 +131,8 @@ The repo is meant to be driven by Claude Code or GitHub Copilot. Both read
 | `/theory-notes <Course> [midterm\|final\|both]` | theory sheet + question bank with mock exams |
 | `/audit-sheet <file.tex>` | adversarial audit in a fresh context; prints a findings table |
 | `/graded-report <Course> <kind> [Descriptor]` | lab (+ notebook), report, proposal, exercise, essay |
-| `/presentation <Course> <minutes> [paper]` | Beamer slides or Canva assets + speaking script |
+| `/presentation <Course> <minutes> [paper]` | HTML deck, Beamer slides or Canva assets + speaking script |
+| `/design-language <name> <look>` | create or apply a visual style for decks (`docs/design/`) |
 | `/tutor <question>` | one question solved by hand in chat, nothing written to disk |
 
 A typical exam: `/new-course` → `/read-sources` → `/transcript` (if you have recordings) →

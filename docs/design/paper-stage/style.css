@@ -1,0 +1,171 @@
+/* Design language: Paper & Stage
+   Punchy kinetic-typography slides for 16:9 decks. Slides alternate between a warm
+   off-white "paper" world (the default slide) and a pitch-black "stage" world (add class
+   "stage" to a slide), with a hard cut between them. One red key word per phrase, revealed
+   word by word with a small overshoot; everything else is ink, white or grey. Paper cut-out
+   objects with soft contact shadows, a pinned grey card, big soft grey arcs, halftone
+   figures on black, small technical labels in the corners.
+   Contrast (checked): ink/paper 14.8, muted/paper 5.4, red #E8505B/paper 3.3 (large text
+   only: key words and headlines), red #E8202A/black 4.5, white/black 20.4, grey #A8A8A8/black
+   8.6, ink/card-grey 5.9. Small text is never red. */
+@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;700;800;900&family=Manrope:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap");
+:root {
+  /* palette */
+  --paper-world: #F6F2EA;
+  --stage-black: #050505;
+  --ink-paper: #1F1F1F;
+  --white: #FFFFFF;
+  --red-flat: #E8505B;     /* red on paper (flat) */
+  --red-glow: #E8202A;     /* red on black (with glow) */
+  --prop-grey: #9A9A9A;    /* pinned card */
+  --arc-grey: #BDBAB4;     /* arcs, grid, resting lines */
+  /* roles: paper world (default) */
+  --chrome: var(--stage-black);
+  --card: var(--paper-world);
+  --paper: #E9E3D8;        /* quiet fill: a darker sheet of the same paper */
+  --ink: var(--ink-paper);
+  --muted: #66625B;
+  --line: var(--arc-grey);
+  --accent: var(--red-flat);
+  --on-accent: var(--ink-paper);
+  --tint: #E9E3D8;
+  --go: var(--ink-paper);
+  --on-go: var(--white);
+  --stop: var(--prop-grey);
+  --on-stop: var(--ink-paper);
+  --pop: var(--prop-grey);
+  --shadow: rgba(31, 31, 31, .28);
+  --glow: rgba(232, 32, 42, .75);
+  --display: "Inter Tight", "Manrope", "Helvetica Neue", Arial, sans-serif;
+  --body: "Inter Tight", "Manrope", "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --radius: 6px;
+  --radius-sm: 4px;
+  --stage-radius: 0px;
+  --title-weight: 800;
+  --title-tracking: -.03em;
+  color-scheme: light;
+}
+/* @@PARTS */
+/* ---- the two worlds: a slide with class "stage" is the black world ---- */
+.slide { background: var(--card); isolation: isolate; }
+.slide.stage {
+  --card: var(--stage-black); --paper: #161616; --tint: #1E1E1E; --ink: var(--white); --muted: #A8A8A8;
+  --line: #3A3A3A; --accent: var(--red-glow); --on-accent: var(--stage-black); --go: var(--white);
+  --on-go: var(--stage-black); --stop: #6E6E6E; --on-stop: var(--white); --pop: #2A2A2A; --shadow: rgba(0, 0, 0, .6);
+}
+/* hard cut between slides, a slow gentle push-in while a slide is on screen */
+.slide, .slide.past, .slide.active { transition: none; transform: none; }
+.slide.active { animation: ps-push 10s ease-out both; }
+@keyframes ps-push { from { scale: 1; } to { scale: 1.025; } }
+
+/* ---- type: one bold geometric sans, tight, centered ---- */
+h1, h2 { font-weight: 800; letter-spacing: -.03em; line-height: .98; }
+.slide > h2, .slide > .eyebrow, .slide > .lede { text-align: center; align-self: center; }
+.eyebrow { color: var(--muted); font-weight: 700; letter-spacing: .18em; }
+.lede { color: var(--muted); }
+.lede b, .cap b { color: var(--ink); }
+.card .tag { color: var(--muted); }
+.card .n { color: var(--ink); }
+.title-slide h1 span { color: var(--accent); }
+
+/* phrase: the words pop in by themselves, one after another, when the slide (or the phrase,
+   if it has data-step) appears. No press per word.
+   <p class="phrase"><span class="w">Each</span><span class="w">lane</span><span class="w key">skips</span></p>
+   Exactly one .key per phrase. style="--d:.5s" on the phrase delays the start. */
+.phrase { margin: auto 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: .06em .26em;
+  font: 800 112px/1 var(--display); letter-spacing: -.03em; text-align: center; color: var(--ink); }
+.split .phrase { justify-content: flex-start; text-align: left; font-size: 96px; }
+.phrase .w { display: inline-block; }
+.phrase .w:nth-child(2) { --i: 1; } .phrase .w:nth-child(3) { --i: 2; } .phrase .w:nth-child(4) { --i: 3; }
+.phrase .w:nth-child(5) { --i: 4; } .phrase .w:nth-child(6) { --i: 5; } .phrase .w:nth-child(7) { --i: 6; }
+.phrase[data-step] { opacity: 1; transform: none; }
+.phrase[data-step]:not(.on) .w { opacity: 0; }
+.slide.active .phrase:not([data-step]) .w, .slide.active .phrase[data-step].on .w {
+  animation: ps-word .38s cubic-bezier(.34, 1.9, .5, 1) both; animation-delay: calc(var(--d, .15s) + var(--i, 0) * .12s); }
+@keyframes ps-word { from { opacity: 0; transform: scale(.35); } to { opacity: 1; transform: none; } }
+.phrase .key { color: var(--accent); font-size: 1.22em; font-weight: 900; }
+.stage .phrase .key { text-shadow: 0 0 .32em var(--glow); }
+.slide.stage.active .phrase:not([data-step]) .key, .slide.stage.active .phrase[data-step].on .key {
+  animation: ps-word .38s cubic-bezier(.34, 1.9, .5, 1) both, ps-pulse 1s ease-out both;
+  animation-delay: calc(var(--d, .15s) + var(--i, 0) * .12s), calc(var(--d, .15s) + var(--i, 0) * .12s + .3s); }
+@keyframes ps-pulse { 0% { text-shadow: 0 0 .32em var(--glow); } 35% { text-shadow: 0 0 .9em var(--glow), 0 0 .2em var(--glow); } 100% { text-shadow: 0 0 .32em var(--glow); } }
+/* optional manual control: data-step on single words still reveals them one press each */
+.phrase .w[data-step] { opacity: 0; transform: scale(.35); }
+.phrase .w[data-step].on { opacity: 1; transform: none; transition: transform .34s cubic-bezier(.34, 1.9, .5, 1), opacity .1s; }
+
+/* ---- technical labels: corner marks, frame code, barcode ---- */
+.hud { position: absolute; inset: 34px; pointer-events: none; z-index: 2; font: 700 15px var(--display); letter-spacing: .08em; color: var(--muted); }
+.hud i { position: absolute; width: 34px; height: 34px; border: 0 solid var(--muted); }
+.hud i:nth-child(1) { left: 0; top: 0; border-left-width: 2px; border-top-width: 2px; }
+.hud i:nth-child(2) { right: 0; top: 0; border-right-width: 2px; border-top-width: 2px; }
+.hud i:nth-child(3) { left: 0; bottom: 0; border-left-width: 2px; border-bottom-width: 2px; }
+.hud i:nth-child(4) { right: 0; bottom: 0; border-right-width: 2px; border-bottom-width: 2px; }
+.hud .code { position: absolute; left: 50px; top: 8px; }
+.hud .code2 { position: absolute; right: 50px; top: 8px; }
+.hud .barcode { position: absolute; right: 50px; bottom: 40px; width: 120px; height: 26px;
+  background: repeating-linear-gradient(90deg, var(--muted) 0 2px, transparent 2px 4px, var(--muted) 4px 5px, transparent 5px 9px, var(--muted) 9px 12px, transparent 12px 14px); }
+.grid-bg { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .45;
+  background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 64px 64px; }
+
+/* ---- big soft grey arcs sweeping through the frame ---- */
+.arcs { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.arcs::before, .arcs::after { content: ""; position: absolute; border-radius: 50%; border: 110px solid var(--line); opacity: .5; filter: blur(1.5px); }
+.arcs::before { width: 1500px; height: 1500px; left: -760px; bottom: -900px; }
+.arcs::after { width: 1100px; height: 1100px; right: -700px; top: -520px; border-width: 70px; }
+
+/* ---- halftone figure on black: dots fading out ---- */
+.halftone { width: 520px; height: 520px; max-width: 100%; align-self: center; flex: none;
+  background: radial-gradient(circle, var(--ink) 34%, transparent 37%) 0 0 / 16px 16px;
+  -webkit-mask: radial-gradient(closest-side, #000 25%, transparent 100%); mask: radial-gradient(closest-side, #000 25%, transparent 100%); }
+
+/* ---- grey paper card pinned with a glossy red push-pin ---- */
+.pin-card { position: relative; align-self: center; width: min(760px, 100%); box-sizing: border-box; background: var(--pop); color: var(--ink);
+  padding: 64px 52px 46px; border-radius: 3px; rotate: -1.6deg; box-shadow: 0 2px 0 var(--shadow), 0 30px 40px -18px var(--shadow); }
+.pin-card::before { content: ""; position: absolute; left: 50%; top: 18px; width: 38px; height: 38px; margin-left: -19px; border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, var(--white) 0 9%, var(--red-flat) 24%, var(--red-glow) 55%, #7A0E14 100%);
+  box-shadow: 2px 8px 10px var(--shadow); }
+.slide.active .pin-card:not([data-step]), .pin-card[data-step].on { animation: drop-in .7s cubic-bezier(.3, 1.5, .5, 1) both; }
+/* an image pin replaces the drawn one: <img class="pin" src=".../objects/push-pin.png" alt=""> */
+.pin-card:has(> .pin)::before { display: none; }
+.pin-card:has(> .pin) { margin-top: 34px; }
+.pin-card > .pin { position: absolute; left: 50%; top: -46px; width: 84px; translate: -50% 0; rotate: 14deg;
+  filter: grayscale(1) drop-shadow(3px 10px 8px var(--shadow)); }
+.pin-card h3 { font: 800 50px/1 var(--display); letter-spacing: -.03em; margin: 0 0 24px; }
+.pin-card ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
+.pin-card li { display: flex; align-items: center; gap: 18px; font: 600 32px/1.2 var(--body); }
+.pin-card svg { width: 40px; height: 40px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* images are shown in grey tone: the shared objects keep their own colors, this style
+   removes them (red stays for the key word only) */
+.slide img { filter: grayscale(1); }
+.slide img.logo { filter: none; }   /* a school or client logo keeps its real colors */
+.cutout svg, .cutout img { filter: grayscale(1) drop-shadow(0 22px 18px var(--shadow)); }
+/* cut-out objects (.cutout, .corner-object) come from the engine; the corner object takes
+   the place of the top-right label */
+.slide:has(.corner-object) .hud .code2 { display: none; }
+
+/* ---- glossy emoji for the punchline slide ---- */
+.emoji-pop { align-self: center; font: 200px/1 "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  filter: drop-shadow(0 26px 22px var(--shadow)); }
+.slide.active .emoji-pop:not([data-step]), .emoji-pop[data-step].on { animation: ps-word .45s cubic-bezier(.34, 1.9, .5, 1) both; }
+.emoji-pop[data-step].on { opacity: 1; transform: none; transition: none; }
+
+/* ---- clean, original phone UI on black ---- */
+.mock-phone { align-self: center; width: 330px; height: 660px; border-radius: 46px; background: var(--paper); padding: 18px; box-sizing: border-box; flex: none;
+  box-shadow: 0 0 0 2px var(--line); }
+.mock-phone .scr { height: 100%; border-radius: 32px; background: var(--card); padding: 44px 20px 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; }
+.mock-phone .bar { height: 46px; border-radius: 23px; background: var(--paper); }
+.mock-phone .row { display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; border-radius: 14px; background: var(--paper); font: 600 19px var(--body); color: var(--ink); }
+.mock-phone .row b { font-weight: 800; }
+.mock-phone .row.hit { box-shadow: inset 0 0 0 2px var(--accent); }
+
+/* shared parts, toned down to ink and grey */
+.card { border-color: var(--paper); }
+.card.dark { background: var(--ink); border-color: var(--ink); }
+.card.dark h3 { color: var(--card); }
+.card.dark p { color: var(--line); }
+.grid-table .row.win span:first-child { color: var(--ink); }
+.counter { background: var(--paper); }
+#dots i.on { background: var(--ink); }   /* red is for key words only */

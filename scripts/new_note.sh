@@ -18,6 +18,7 @@
 #   script      presentation_script_template.tex Presentation_Script    presentation/
 #   asset       slide_asset_template.tex         Slide_Asset            presentation/assets/
 #   paper       paper_llncs/ (folder)            Paper                  paper/
+#   deck        html_deck/deck_template.html     Slides_Deck            presentation/  (HTML, DECK_DESIGN=<name>)
 #
 #   e.g. scripts/new_note.sh AlgorithmOptimization final "Algorithm Optimization"
 #        scripts/new_note.sh AlgorithmOptimization lab "Algorithm Optimization" Lab2_Report
@@ -45,6 +46,7 @@ case "$kind" in
   script)     tpl=presentation_script_template.tex; desc=Presentation_Script; sub=presentation ;;
   asset)      tpl=slide_asset_template.tex;         desc=Slide_Asset;         sub=presentation/assets ;;
   paper)      tpl=paper_llncs;                      desc=Paper;               sub=paper ;;
+  deck)       tpl=html_deck/deck_template.html;     desc=Slides_Deck;         sub=presentation ;;
   *) echo "unknown kind '$kind' (run without arguments to see the list)" >&2; exit 1 ;;
 esac
 desc="${4:-$desc}"
@@ -67,6 +69,13 @@ if [ "$kind" = paper ]; then
   [ -e "$out" ] && { echo "refusing to overwrite existing $out" >&2; exit 1; }
   cp -R "$T/paper_llncs" "$out"
   echo "created ${out#$root/}/ (build with: cd ${out#$root/} && tectonic main.tex)"
+  exit 0
+fi
+
+if [ "$kind" = deck ]; then
+  out="$dir/$sub/$name.html"
+  python3 "$root/scripts/html_deck.py" new "$out" "$display" ${DECK_DESIGN:+"$DECK_DESIGN"} || exit 1
+  echo "open it in a browser (S = slide panel). Parts and rules: templates/html_deck/DESIGN.md"
   exit 0
 fi
 

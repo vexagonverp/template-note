@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+"""HTML stop-motion decks (templates/html_deck/).
+
+  html_deck.py new <out.html> "Course Name" [design]   new deck from the template
+  html_deck.py design <deck.html> <design>              swap the design language
+  html_deck.py upgrade <deck.html>                      take the latest engine from the template,
+                                                        keep the deck's design, slides and code
+  html_deck.py artifact <deck.html> [out.html]          the part to publish as a claude.ai artifact
+                                                        (lists local images to publish as files)
+  html_deck.py designs                                  list design languages
+
+A deck has five regions between markers: DESIGN and DESIGN-PARTS (filled from
+docs/design/<name>/style.css, split at its /* @@PARTS */ line), DECK-CSS,
+SLIDES and DECK-JS (yours).
+Everything else is the shared engine and comes from the template.
+"""
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+TPL = ROOT / "templates/html_deck/deck_template.html"
+DESIGNS = ROOT / "docs/design"   # one folder per design style: README.md, style.css, preview.html
+REGIONS = ["DESIGN", "DESIGN-PARTS", "DECK-CSS", "SLIDES", "DECK-JS"]
+DEFAULT_DESIGN = "paper-stage"
+
+
+def pat(name):
+    return re.compile(r"((?:/\*|<!--) @@%s-START (?:\*/|-->))(.*?)((?:/\*|<!--) @@%s-END (?:\*/|-->))"
+                      % (re.escape(name), re.escape(name)), re.S)
+
+
+def get(text, name, default=None):
+    m = pat(name).search(text)
+    if not m:
+        if default is not None:
+            return default
+        sys.exit(f"marker @@{name} not found")
+    return m.group(2)
+
+
+def put(text, name, body):
+    if not pat(name).search(text):
+        sys.exit(f"marker @@{name} not found")
+    return pat(name).sub(lambda m: m.group(1) + body + m.group(3), text, count=1)
+
+
+def design_css(name):
+    """(tokens, parts): the design file is split at its /* @@PARTS */ line."""
+    f = DESIGNS / name / "style.css"
+    if not f.exists():
+        sys.exit(f"no design '{name}'. Have: {', '.join(names())}")
+    tokens, _, parts = f.read_text().partition("/* @@PARTS */")
+    return "\n" + tokens.strip() + "\n", "\n" + parts.strip() + "\n" if parts.strip() else "\n"
+
+
+def names():
+    return [p.parent.name for p in sorted(DESIGNS.glob("*/style.css"))]
+
+
+def apply_design(text, name):
+    tokens, parts = design_css(name)
+    return put(put(text, "DESIGN", tokens), "DESIGN-PARTS", parts)
+
+
+def upgraded(old):
+    """The template's engine with this deck's regions and title."""
+    title = re.search(r"<title>(.*?)</title>", old, re.S).group(1)
+    new = TPL.read_text()
+    for r in REGIONS:
+        new = put(new, r, get(old, r, default="\n" if r == "DESIGN-PARTS" else None))
+    return set_title(new, title)
+
+
+def set_title(text, title):
+    return re.sub(r"<title>.*?</title>", lambda m: f"<title>{title}</title>", text, count=1)
+
+
+def main(argv):
+    if len(argv) < 2 or argv[1] in ("-h", "--help"):
+        print(__doc__.strip()); return
+    cmd = argv[1]
+    if cmd == "designs":
+        for n in names():
+            first = (DESIGNS / n / "style.css").read_text().splitlines()[0]
+            print(f"{n:16} {first.strip('/* ')}   docs/design/{n}/")
+    elif cmd == "new":
+        out, course = Path(argv[2]), argv[3]
+        design = argv[4] if len(argv) > 4 else DEFAULT_DESIGN
+        if out.exists():
+            sys.exit(f"refusing to overwrite {out}")
+        t = apply_design(TPL.read_text(), design)
+        t = t.replace("Course Name · Presentation", f"{course} · Presentation")
+        out.write_text(t)
+        print(f"created {out} (design: {design})")
+    elif cmd == "design":
+        deck, design = Path(argv[2]), argv[3]
+        text = deck.read_text()
+        if not pat("DESIGN-PARTS").search(text):
+            text = upgraded(text)
+            print(f"{deck}: engine updated from template first (older deck)")
+        deck.write_text(apply_design(text, design))
+        print(f"{deck}: design set to {design}")
+    elif cmd == "upgrade":
+        deck = Path(argv[2])
+        deck.write_text(upgraded(deck.read_text()))
+        print(f"{deck}: engine updated from template")
+    elif cmd == "artifact":
+        deck = Path(argv[2])
+        m = re.search(r"<!-- @@ARTIFACT-START -->\n(.*)<!-- @@ARTIFACT-END -->", deck.read_text(), re.S)
+        out = Path(argv[3]) if len(argv) > 3 else ROOT / ".temp" / (deck.stem + ".artifact.html")
+        out.parent.mkdir(parents=True, exist_ok=True)
+        page, files = m.group(1), {}
+
+        def local(mt):
+            src = mt.group(2)
+            if re.match(r"(https?:|data:|//)", src):
+                return mt.group(0)
+            f = (deck.parent / src).resolve()
+            files[f"media/{f.name}"] = str(f)
+            return f'{mt.group(1)}media/{f.name}"'
+        # local images move to media/ next to the page; publish them with the page as `files`
+        page = re.sub(r'((?:src|data-[\w-]+)=")([^"]+\.(?:png|jpe?g|gif|webp|svg))"', local, page)
+        out.write_text(page)
+        print(out)
+        for k, v in files.items():
+            print(f"  file {k} <- {v}")
+    else:
+        sys.exit(__doc__.strip())
+
+
+if __name__ == "__main__":
+    main(sys.argv)

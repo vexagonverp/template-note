@@ -48,7 +48,7 @@ def main():
             d.text((x + 2, y + 2), name, fill="black")
         path = out / f"grid_{g // a.per + 1:03d}.png"
         sheet.save(path)
-        print(path.relative_to(root))
+        print(path.resolve().relative_to(root) if path.resolve().is_relative_to(root) else path)
 
 
 if __name__ == "__main__":

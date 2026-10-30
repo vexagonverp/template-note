@@ -80,6 +80,9 @@ scripts/new_note.sh <Course> asset  "<Course display name>"     # per math image
   may press it, what it costs) with the real names only as small grey labels, and actions as
   plain sentences ("IU presses Cancel on Binh's diploma"). Formulas become worked numbers with
   labels ("value there: 10² − 10 + 3 = 93").
+  **Exception:** code is fine when the audience already programs (a data structures or
+  algorithms class). Keep it short, put it next to the diagram it drives, and put the real
+  numbers from the running example in the comments (`update[lane] = x  # 20k, 40k, 50k`).
 - **Register:** spoken, short sentences for the script; no em dashes or contractions on slides.
 
 ## 4. Build and check

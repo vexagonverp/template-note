@@ -52,13 +52,14 @@ source (URL or "own photo") and the license, so we know it can be used.
 
 | File | Source | License | Notes |
 |------|--------|---------|-------|
-| `objects/*.png` (26 files) | Pinterest pins; sources and pin IDs below | unknown | transparent PNGs, backgrounds removed by hand, trimmed and split with `scripts/cutout.py`. Fine for class slides; check licences before publishing anything public |
+| `objects/*.png` (19 files) | Pinterest pins; sources and pin IDs below | unknown | transparent PNGs, backgrounds removed by hand, trimmed and split with `scripts/cutout.py`. Fine for class slides; check licences before publishing anything public |
 
 ## Objects
 
-`objects/`: cut-out objects (arrows, hands, camera, brain, dice, coins, clock, keys, ladder,
-light bulb, balance scale, price tag, train, magnifying glass, pencil, push-pin, phone,
-laptop, exclamation mark, retro computer, sold-out stamp). Most are black-and-white
+`objects/`: cut-out objects (arrows, hands, dice, coins, light bulb, price tag, train,
+magnifying glass, pencil, push-pin, phone, exclamation mark, retro computer, sold-out stamp).
+Seven more (alarm clock, balance scale, brain, camera, keys, ladder, laptop hands) moved to
+`docs/design/paper-stage/refs/` on 30 Oct 2026: reference only, not for slides. Most are black-and-white
 halftone with a white paper edge; `retro-computer.png` (yellow), `train.png` (photo) and
 `sold-out-stamp.png` (red) keep their colors. File names say what each shows. Use in a deck:
 `<div class="cutout"><img src="<relative path>/arrow-up-right.png" alt="arrow"></div>`.
@@ -82,24 +83,23 @@ processing; the cut-outs keep their full resolution.
 | `dice_src.png` | halftone die showing five, paper edge | added 29 Oct (source not recorded) | `dice.png`; good for randomness / coin flips |
 | `magnifying-glass_src.png` | halftone magnifying glass, paper edge | added 29 Oct (source not recorded) | `magnifying-glass.png`; good for search |
 | `push-pin_src.png` | halftone push-pin on beige paper | pin 1141944049324791239 | `push-pin.png` |
-| `brain_src.png` | halftone brain | pin 734649758007848254 | `brain.png` |
+| `brain_src.png` | halftone brain | pin 734649758007848254 | `brain.png` (now in paper-stage `refs/`) |
 | `arrows-three_src.png` | three hand-drawn arrows on beige paper | pin 857232110368480380 | `arrow-right.png`, `arrow-down-right.png`, `arrow-up-right.png` |
-| `camera-rangefinder_src.png` | halftone rangefinder camera | pin 883268545692559022 | `camera-rangefinder.png` |
+| `camera-rangefinder_src.png` | halftone rangefinder camera | pin 883268545692559022 | `camera-rangefinder.png` (now in paper-stage `refs/`) |
 | `phone-hands_src.png` | halftone hands holding a phone (blank screen) | pin 947163365478021277 | `phone-hands.png` |
 | `arrow-curved_src.png` | hand-drawn curved arrow on beige paper | pin 948500371540596813 | `arrow-curved.png` |
 | `exclamation-big_src.png` | double exclamation mark, halftone | Pinterest (no pin ID) | `exclamation-big.png` |
-| `laptop-hands_src.png` | halftone hands typing on a laptop (checkerboard baked in) | Pinterest (no pin ID) | `laptop-hands.png` |
+| `laptop-hands_src.png` | halftone hands typing on a laptop (checkerboard baked in) | Pinterest (no pin ID) | `laptop-hands.png` (now in paper-stage `refs/`) |
 | `hands-two_src.png` | two halftone hands, open palm and pinch | Pinterest (no pin ID) | `hand-open-palm.png`, `hand-pinch.png` |
 
 ### Added 29 Oct 2026 (inbox, background removed by hand; source not recorded)
 
+(`alarm-clock`, `balance-scale`, `keys` and `ladder` were added here too; they moved to
+paper-stage `refs/` on 30 Oct.)
+
 | Cut-out | What it shows | Notes |
 |---------|---------------|-------|
-| `alarm-clock.png` | halftone alarm clock with paper edge | speed, time |
-| `balance-scale.png` | engraved balance scale | comparing options |
 | `coin-heads.png`, `coin-tails.png` | both sides of a 1945 US dime (smooth drawing, not halftone) | coin flips; real currency design, public domain |
-| `keys.png` | engraved ring of old keys | access, keys in a map |
-| `ladder.png` | engraved step ladder | levels, lanes |
 | `light-bulb.png` | halftone light bulb with paper edge | an idea |
 | `price-tag.png` | blank hand-drawn price tag | inside made solid white so it reads on black |
 | `sold-out-stamp.png` | red "SOLD OUT" stamp | letters filled white so they read on black |

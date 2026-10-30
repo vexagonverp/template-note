@@ -99,4 +99,8 @@ scripts/new_note.sh <Course> asset  "<Course display name>"     # per math image
   paths, the source papers and the audience, and ask it (no edits) for jargon used before it is
   explained, jumps between slides, anything that still reads like code, and every claim or
   number that the source does not support. Apply the fixes and shoot again.
+- **Sending a deck to someone:** `python3 scripts/html_deck.py bundle <deck.html>` writes one
+  self-contained file to `.temp/share/` with every local image embedded, so it opens offline with
+  a double-click (fonts fall back to system fonts when offline). Check it with `shots` on the
+  bundled file, then `open -R` it so the user can send it. Re-bundle after every change.
 - Report the slide count (and the total script time if there is a script). Do not commit unless asked.

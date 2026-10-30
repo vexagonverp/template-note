@@ -104,7 +104,7 @@ scripts/
   apply_patches.py            many exact replacements, each must match once, dry run first
   figstyle.py                 shared matplotlib style + save() for report/slide figures
   package_submission.sh       hand-in folder + zip in <Course>/submit/
-  html_deck.py                new deck, switch its design style, artifact copy
+  html_deck.py                new deck, switch its design style, screenshots, bundle to send, artifact copy
   contrast.py  cutout.py      check a style's color contrast; cut an object out of its background
 
 docs/

@@ -12,6 +12,7 @@ python3 scripts/html_deck.py design <deck.html> <name>                 # restyle
 python3 scripts/html_deck.py upgrade <deck.html>                       # latest engine, keep slides
 python3 scripts/html_deck.py artifact <deck.html>                      # copy for claude.ai, only if the user asks for a link
 python3 scripts/html_deck.py shots <deck.html> [3:1 ...]              # PNG of every slide + contact sheets
+python3 scripts/html_deck.py bundle <deck.html> [out.html]             # one file to send: images embedded (default .temp/share/)
 ```
 
 Presenting: Right / Space = next step, Left = back, **S = slide panel** (thumbnails on the

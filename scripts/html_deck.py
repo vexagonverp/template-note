@@ -8,6 +8,8 @@
   html_deck.py artifact <deck.html> [out.html]          the part to publish as a claude.ai artifact
                                                         (lists local images to publish as files)
   html_deck.py designs                                  list design languages
+  html_deck.py bundle <deck.html> [out.html]            one self-contained file to send: every local
+                                                        image embedded, opens offline with a double-click
   html_deck.py shots <deck.html> [out_dir] [slide:step ...]
                                                         headless-Chrome PNG of every slide at its
                                                         last step, plus any slide:step you name
@@ -100,6 +102,7 @@ def shots(deck, out, extra):
         sys.exit("no Chrome/Chromium found")
     text = deck.read_text()
     n = len(re.findall(r'<section class="slide[\s"]', text))
+    out = out.resolve()
     out.mkdir(parents=True, exist_ok=True)
     copy = out / "_shot.html"
     base = f'<base href="{deck.parent.resolve().as_uri()}/">'
@@ -123,6 +126,36 @@ def shots(deck, out, extra):
                     "--out", str(out / "grids"), *pngs], capture_output=True)
     print(f"{n} slides, {len(jobs)} shots in {out}/ ; contact sheets in {out}/grids/")
     print("check: nothing clipped or overlapping (corner objects vs long titles), text at least 16px")
+
+
+MIME = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif",
+        ".webp": "image/webp", ".svg": "image/svg+xml"}
+
+
+def bundle(deck, out):
+    """Embed every local image (src, data-*, CSS url()) as a data: URI, so the deck is one file."""
+    import base64
+    text = deck.read_text()
+    done, missing = {}, set()
+
+    def embed(m):
+        ref = m.group(2)
+        f = (deck.parent / ref).resolve()
+        if not f.is_file():
+            if not (ref.startswith("...") or "<" in ref):   # example paths in comments
+                missing.add(ref)
+            return m.group(0)
+        if ref not in done:
+            done[ref] = f"data:{MIME[f.suffix.lower()]};base64," + base64.b64encode(f.read_bytes()).decode()
+        return m.group(1) + done[ref] + m.group(3)
+    pat = r'((?:src|href|data-[\w-]+)=["\']|url\(["\']?)([^"\'()\s:]+\.(?:png|jpe?g|gif|webp|svg))(["\')])'
+    text = re.sub(pat, embed, text, flags=re.I)
+    out.write_text(text)
+    mb = out.stat().st_size / 1e6
+    print(f"{out}  ({mb:.1f} MB, {len(done)} images embedded)")
+    for m in sorted(missing):
+        print(f"  not found, left as is: {m}")
+    print("fonts still load from Google Fonts when online; offline the deck falls back to system fonts")
 
 
 def main(argv):
@@ -174,6 +207,11 @@ def main(argv):
         print(out)
         for k, v in files.items():
             print(f"  file {k} <- {v}")
+    elif cmd == "bundle":
+        deck = Path(argv[2])
+        out = Path(argv[3]) if len(argv) > 3 else ROOT / ".temp" / "share" / f"{deck.stem}.html"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        bundle(deck, out)
     elif cmd == "shots":
         deck = Path(argv[2])
         rest = argv[3:]

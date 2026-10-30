@@ -10,6 +10,10 @@
   html_deck.py designs                                  list design languages
   html_deck.py bundle <deck.html> [out.html]            one self-contained file to send: every local
                                                         image embedded, opens offline with a double-click
+  html_deck.py pdf <deck.html> [out.pdf] [--last]       PDF for phones (iOS previews do not run the
+                                                        deck's JavaScript): one page per press, so
+                                                        swiping plays the animation; --last = one
+                                                        page per slide
   html_deck.py shots <deck.html> [out_dir] [slide:step ...]
                                                         headless-Chrome PNG of every slide at its
                                                         last step, plus any slide:step you name
@@ -158,6 +162,49 @@ def bundle(deck, out):
     print("fonts still load from Google Fonts when online; offline the deck falls back to system fonts")
 
 
+# PDF copy: no panel button or key hint, and the step count of every slide written into the page
+PDF_JS = """<style>#panel-btn,#hint{display:none!important}</style><script>(()=>{
+const q=new URLSearchParams(location.search);
+if(q.has('count')){setTimeout(()=>{const n=document.querySelectorAll('#stage > .slide').length,c=[];
+for(let i=0;i<n;i++){Deck.go(i,0);c.push(Math.max(1,document.querySelectorAll('#dots i').length));}
+document.body.setAttribute('data-steps',c.join(','));},50);}
+else if(q.has('s')){setTimeout(()=>Deck.go(+q.get('s')-1,+q.get('k')),50);}})();</script>"""
+
+
+def pdf(deck, out, last_only):
+    """One page per press (or per slide), screenshotted at 1920x1080 and stitched with Pillow."""
+    from PIL import Image
+    chrome = next((c for c in CHROME if os.path.exists(c) or shutil.which(c)), None)
+    if not chrome:
+        sys.exit("no Chrome/Chromium found")
+    work = (ROOT / ".temp" / "pdf" / deck.stem).resolve()
+    work.mkdir(parents=True, exist_ok=True)
+    copy = work / "_pdf.html"
+    base = f'<base href="{deck.parent.resolve().as_uri()}/">'
+    copy.write_text(deck.read_text().replace('<meta charset="utf-8">', '<meta charset="utf-8">' + base, 1) + PDF_JS)
+    dom = subprocess.run([chrome, "--headless=new", "--disable-gpu", "--virtual-time-budget=4000",
+                          "--dump-dom", f"{copy.as_uri()}?count=1"], capture_output=True, text=True, timeout=120).stdout
+    m = re.search(r'data-steps="([\d,]+)"', dom)
+    if not m:
+        sys.exit("could not read the step counts from the deck")
+    counts = [int(x) for x in m.group(1).split(",")]
+    jobs = [(i, (n - 1) if last_only else k) for i, n in enumerate(counts, 1) for k in ([0] if last_only else range(n))]
+
+    def one(job):
+        sl, st = job
+        png = work / f"p{sl:02d}_{st:02d}.png"
+        subprocess.run([chrome, "--headless=new", "--disable-gpu", "--hide-scrollbars", "--window-size=1920,1080",
+                        "--virtual-time-budget=4000", f"--screenshot={png}", f"{copy.as_uri()}?s={sl}&k={st}"],
+                       capture_output=True, timeout=60)
+        return png
+    with ThreadPoolExecutor(6) as ex:
+        pngs = list(ex.map(one, jobs))
+    copy.unlink()
+    pages = [Image.open(p).convert("RGB") for p in pngs]
+    pages[0].save(out, save_all=True, append_images=pages[1:], resolution=144, quality=85)
+    print(f"{out}  ({out.stat().st_size / 1e6:.1f} MB, {len(pages)} pages from {len(counts)} slides)")
+
+
 def main(argv):
     if len(argv) < 2 or argv[1] in ("-h", "--help"):
         print(__doc__.strip()); return
@@ -212,6 +259,12 @@ def main(argv):
         out = Path(argv[3]) if len(argv) > 3 else ROOT / ".temp" / "share" / f"{deck.stem}.html"
         out.parent.mkdir(parents=True, exist_ok=True)
         bundle(deck, out)
+    elif cmd == "pdf":
+        deck = Path(argv[2])
+        rest = [a for a in argv[3:] if a != "--last"]
+        out = Path(rest[0]) if rest else ROOT / ".temp" / "share" / f"{deck.stem}.pdf"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        pdf(deck, out, "--last" in argv)
     elif cmd == "shots":
         deck = Path(argv[2])
         rest = argv[3:]

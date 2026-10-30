@@ -103,4 +103,8 @@ scripts/new_note.sh <Course> asset  "<Course display name>"     # per math image
   self-contained file to `.temp/share/` with every local image embedded, so it opens offline with
   a double-click (fonts fall back to system fonts when offline). Check it with `shots` on the
   bundled file, then `open -R` it so the user can send it. Re-bundle after every change.
+  **Phones:** iOS opens a received `.html` in a preview that does not run JavaScript, so the
+  deck shows blank. For phones send `python3 scripts/html_deck.py pdf <deck.html>` instead: one
+  page per press, so swiping plays the animation (`--last` for one page per slide). A hosted
+  link also works, but only publish one when the user asks for a link.
 - Report the slide count (and the total script time if there is a script). Do not commit unless asked.

@@ -489,7 +489,7 @@ h1, h2 { font-weight: 800; letter-spacing: -.03em; line-height: .98; }
 <script>
 /* ================= engine (shared by every deck) =================
    Deck.register(slideId, { steps, init(slideEl), render(step, slideEl) })
-     steps  : number of presses on that slide (or omit to count data-step / data-at)
+     steps  : number of states, the first one included (3 presses = 4); omit to count data-step / data-at
      init   : runs once at start (build DOM for the animation)
      render : runs on every step change; draw the state for `step` (must work going backwards)
 */

@@ -7,7 +7,8 @@ docs/design/
   README.md            general rules for anything visual (this file)
   <style>/README.md    the style's spec: brief, palette and roles, pairings, type, layout, rules, contrast
   <style>/style.css    tokens + part overrides that decks load (via scripts/html_deck.py)
-  <style>/preview.html sample slides in that style
+  <style>/preview.html sample slides in that style (look at it rendered)
+  <style>/starter.html optional: sample slides a new deck starts with, one per part, limits in comments
   <style>/refs/        inspiration: posters, screenshots, GIFs of motion. Look, never ship.
 ```
 
@@ -124,6 +125,7 @@ with `/design-language`. Each must say:
 | Name | Mood | Use for |
 |------|------|---------|
 | [`block-shapes`](block-shapes/README.md) | Bauhaus geometric: flat color tiles with big cropped shapes, giant condensed headlines, light body text | seminars, algorithm talks, anything that should look bold and graphic |
+| [`clay-blocks`](clay-blocks/README.md) | earth and houses cut from paper: flat clay, iron brown and a turquoise highlight, few big uneven blocks, heavy tight titles | real-estate talks, explainers, anything that should feel warm and solid |
 | [`paper-stage`](paper-stage/README.md) (default) | kinetic typography: warm paper slides and black stage slides, one red key word per phrase revealed word by word, paper cut-outs, pinned card, arcs | punchy explainers, hooks, short talks with few words per slide |
 
 ## 11. Final check (any visual piece)

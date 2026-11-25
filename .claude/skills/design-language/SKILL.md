@@ -33,6 +33,10 @@ existing style folder such as `docs/design/block-shapes/` as a model, and
    style-free elements in `assets/media/` (objects in original colors, icons, shapes,
    textures): adapt them in CSS (e.g. `filter: grayscale(1)`), never by adding restyled
    copies there.
+   If the look has its own slide types, also write **`starter.html`**: one slide per part, a comment
+   above each with when to use it and its limits (letters per line, number of items), between
+   `@@SLIDES` and `@@DECK-JS` markers. New decks start from it (`docs/design/clay-blocks/` is the
+   model). Make it work for any topic, and keep it short: agents read it to learn the markup.
 4. **Check contrast:** `python3 scripts/contrast.py <name>`. Fix any FAIL; any "large text
    only" pair must not be used for body text (change the token or the part).
 5. **Preview:** `python3 scripts/html_deck.py new docs/design/<name>/preview.html "Design preview" <name>`,

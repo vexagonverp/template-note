@@ -78,7 +78,7 @@ substituted.
 | `exercise` | a short homework / exercise answer sheet |
 | `essay-en` / `essay-vi` | an English essay / a Vietnamese tiểu luận (13pt, VN margins) |
 | `slides` / `script` / `asset` | Beamer slides / a presentation script / a slide-sized image for Canva |
-| `deck` | an HTML slide deck with step-by-step animated diagrams (preferred for algorithm talks; see `templates/html_deck/DESIGN.md`) |
+| `deck` | an HTML slide deck with step-by-step animated diagrams (preferred for talks; styles in `docs/design/`, see `templates/html_deck/DESIGN.md`) |
 | `paper` | a Springer LNCS paper (folder with sections/, figures/, references.bib) |
 
 The exam templates share `_exam_preamble.tex` and the graded templates share

@@ -1,0 +1,969 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- @@ARTIFACT-START -->
+<title>Clay Blocks: design preview</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<!--
+  HTML DECK TEMPLATE (stop-motion slides)
+  Start one with:  scripts/new_note.sh <Course> deck "Course Name" [Descriptor]
+  Pick a design:   DECK_DESIGN=<name> scripts/new_note.sh ...   (docs/design/<name>/)
+  Rules and parts: templates/html_deck/DESIGN.md
+
+  Present: open in a browser. Right / Space = next step, Left = back, S = slide panel,
+  F = full screen, Home / End. Click: left quarter goes back, anywhere else forward.
+
+  Edit only the four marked regions: DESIGN (tokens, swapped by new_note.sh),
+  DECK-CSS (this deck's own parts), SLIDES, DECK-JS (custom animated slides).
+  The engine between them is shared by every deck; change it in the template.
+-->
+<style>
+/* @@DESIGN-START */
+/* Design language: Clay Blocks
+   Earth and houses, cut from paper. Three flat colors and nothing else: raw clay (about 60%),
+   iron brown (about 30%), turquoise (highlight only, 10% at most). Pictures and lists sit in a
+   few big hand-cut blocks that do not quite line up; text is always straight. No texture,
+   tints, transparency, gradients or shadows.
+   Pairs: ink on card or card on ink (any text); ink on turquoise and turquoise on ink (large
+   text only: 24px+, or 19px+ bold); turquoise on clay is for shapes, never text (1.9).
+   Dark slides: add class "stage". Highlight fill: --hi with --on-hi text, on both.
+   Contrast (checked): ink/card 8.0, card/ink 8.0, ink/turquoise 4.2, turquoise/ink 4.2. */
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap");
+:root {
+  /* palette */
+  --clay: #D0BCAC;
+  --iron: #461C0C;
+  --turq: #269991;
+  /* roles: clay slides (default) */
+  --chrome: var(--iron);      /* around the stage */
+  --card: var(--clay);        /* slide surface */
+  --paper: var(--clay);       /* no quiet fill: use an outline or a brown block */
+  --ink: var(--iron);         /* text, blocks, outlines */
+  --muted: var(--iron);       /* secondary text: smaller and lighter weight, same color */
+  --line: var(--iron);
+  --accent: var(--iron);      /* text-safe accent; the highlight is --hi */
+  --on-accent: var(--clay);
+  --tint: var(--turq);        /* highlight fill behind large ink text */
+  --hi: var(--turq);          /* the one thing to look at */
+  --on-hi: var(--iron);
+  --go: var(--turq);          /* found */
+  --on-go: var(--iron);
+  --stop: var(--clay);        /* rejected: clay with a dashed outline */
+  --on-stop: var(--iron);
+  --pop: var(--turq);
+  --shadow: transparent;
+  --display: "Archivo", "Archivo Black", "Helvetica Neue", Arial, sans-serif;
+  --body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --radius: 0px;
+  --radius-sm: 0px;
+  --stage-radius: 0px;
+  --title-weight: 900;
+  --title-tracking: -.04em;
+  color-scheme: light;
+}
+/* @@DESIGN-END */
+
+/* ================= engine: stage, transitions, panel, footer ================= */
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--chrome, var(--paper)); color: var(--ink); font-family: var(--body);
+  overflow: hidden; padding-block: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-font-smoothing: antialiased;
+}
+#viewport { height: 100%; display: grid; place-items: center; transition: padding-left .3s ease; }
+body.panel-open #viewport { padding-left: 290px; }
+#frame { position: relative; }
+#stage {
+  position: absolute; left: 0; top: 0; width: var(--stage-w, 1600px); height: var(--stage-h, 900px); transform-origin: 0 0;
+  background: var(--card); border-radius: var(--stage-radius, 18px); overflow: hidden; cursor: pointer;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 8%, transparent), 0 12px 40px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.slide {
+  position: absolute; inset: 0; padding: 70px 100px 90px; display: flex; flex-direction: column; gap: 22px; color: var(--ink);
+  opacity: 0; visibility: hidden; transform: translateX(90px);
+  transition: opacity .45s ease, transform .5s cubic-bezier(.25,.8,.25,1), visibility 0s .5s;
+}
+.slide.past { transform: translateX(-90px); }
+.slide.active { opacity: 1; visibility: visible; transform: none; transition: opacity .45s ease, transform .5s cubic-bezier(.25,.8,.25,1); }
+[data-step] { opacity: 0; transform: translateY(14px); transition: opacity .35s ease, transform .35s ease; }
+[data-step].on { opacity: 1; transform: none; }
+
+#foot { position: absolute; left: 100px; right: 100px; bottom: 30px; display: flex; align-items: center;
+  justify-content: space-between; font: 600 18px var(--body); color: var(--muted); pointer-events: none; z-index: 5; }
+#dots { display: flex; gap: 8px; }
+#dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); transition: background .2s; }
+#dots i.on { background: var(--accent); }
+#count { font-variant-numeric: tabular-nums; }
+
+#hint { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  font: 500 14px var(--body); color: var(--muted); background: var(--card); padding: 8px 14px; border-radius: 999px;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--ink) 12%, transparent); transition: opacity .6s; white-space: nowrap; z-index: 30; }
+#hint.hide { opacity: 0; pointer-events: none; }
+kbd { font: 600 12px var(--mono); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; }
+
+#panel-btn { position: fixed; z-index: 30; top: calc(14px + env(safe-area-inset-top, 0px)); left: calc(14px + env(safe-area-inset-left, 0px));
+  font: 600 14px var(--body); color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  padding: 8px 12px; cursor: pointer; opacity: .55; transition: opacity .2s; }
+#panel-btn:hover, #panel-btn:focus-visible, body.panel-open #panel-btn { opacity: 1; }
+#panel-btn:focus-visible, .thumb:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+#panel { position: fixed; z-index: 20; top: 0; bottom: 0; left: 0; width: 270px; background: var(--card);
+  border-right: 1px solid var(--line); padding: calc(64px + env(safe-area-inset-top, 0px)) 14px 20px calc(14px + env(safe-area-inset-left, 0px));
+  overflow-y: auto; transform: translateX(-105%); transition: transform .3s ease; box-sizing: border-box; }
+body.panel-open #panel { transform: none; }
+#panel-list { display: flex; flex-direction: column; gap: 12px; }
+.thumb { display: grid; grid-template-columns: 22px 1fr; gap: 6px 8px; align-items: start; background: none; border: 0;
+  padding: 6px; border-radius: 10px; cursor: pointer; text-align: left; font: 600 13px var(--body); color: var(--muted); }
+.thumb .num { padding-top: 2px; font-variant-numeric: tabular-nums; }
+.thumb .mini { position: relative; width: var(--thumb-w, 200px); height: var(--thumb-h, 112.5px); overflow: hidden; border-radius: 8px; background: var(--card);
+  border: 2px solid var(--line); box-sizing: content-box; }
+.thumb .t { grid-column: 2; line-height: 1.25; }
+.thumb.now { background: var(--tint); color: var(--ink); }
+.thumb.now .mini { border-color: var(--accent); }
+.thumb .slide.clone { opacity: 1; visibility: visible; transform: scale(var(--thumb-s, .125)); transform-origin: 0 0; width: var(--stage-w, 1600px); height: var(--stage-h, 900px);
+  transition: none; pointer-events: none; }
+.thumb .slide.clone * { transition: none !important; animation: none !important; }
+
+/* ================= shared parts (use these in slides) ================= */
+.eyebrow { font: 700 18px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; letter-spacing: var(--title-tracking); }
+h2 { font-size: 62px; line-height: 1.05; font-weight: var(--title-weight); }
+.lede { font-size: 30px; line-height: 1.35; color: var(--muted); margin: 0; max-width: 1250px; }
+.lede b { color: var(--ink); }
+p { margin: 0; }
+code { font: 600 .85em var(--mono); background: var(--paper); padding: 2px 7px; border-radius: 6px; }
+
+.title-slide { justify-content: flex-start; }
+.title-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 60px; }
+.title-slide h1 { font-size: 150px; line-height: .92; font-weight: var(--title-weight); }
+.title-slide h1 span { color: var(--accent); }
+.title-col { width: 440px; flex: none; border-top: 1px solid var(--ink); padding-top: 16px; display: flex; flex-direction: column; gap: 14px; }
+.title-col .lede { font-size: 26px; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 24px; font: 600 20px var(--body); color: var(--muted); }
+
+.points { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 22px; }
+.points li { font: 500 34px/1.3 var(--body); padding-left: 44px; position: relative; max-width: 1250px; }
+.points li::before { content: ""; position: absolute; left: 0; top: 16px; width: 22px; height: 12px; border-radius: 3px; background: var(--accent); }
+
+.cards { display: grid; gap: 22px; }
+.cards.two { grid-template-columns: repeat(2, 1fr); }
+.cards.three { grid-template-columns: repeat(3, 1fr); }
+.card { border: 2px solid var(--paper); background: var(--card); border-radius: var(--radius); padding: 26px 30px;
+  display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.card h3 { font-size: 30px; font-weight: 700; }
+.card p { font-size: 25px; line-height: 1.35; color: var(--muted); }
+.card .tag { font: 700 16px var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.card .n { font: 800 64px/1 var(--display); color: var(--accent); }
+.card.dark { background: var(--ink); border-color: var(--ink); }
+.card.dark h3 { color: var(--card); }
+.card.dark p { color: var(--line); }
+
+/* table: rows can reveal with data-step */
+.grid-table { display: grid; grid-template-columns: repeat(var(--cols, 3), auto); font-size: 26px; border-radius: 14px; overflow: hidden; }
+.grid-table > div { display: contents; }
+.grid-table span { padding: 17px 22px; border-bottom: 2px solid var(--paper); transition: opacity .35s; }
+.grid-table .th span { font: 700 17px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); background: var(--paper); border: 0; }
+.grid-table .row span:first-child { font-weight: 700; }
+.grid-table .mono { font-family: var(--mono); font-size: .9em; }
+.grid-table .row.win span { background: var(--tint); }
+.grid-table .row.win span:first-child { color: var(--accent); }
+.grid-table .row[data-step] { opacity: 1; transform: none; }
+.grid-table .row[data-step]:not(.on) span { opacity: 0; }
+
+/* code: lines light up with data-at="k" on step k */
+pre.code { margin: 0; background: var(--ink); color: var(--card); border-radius: var(--radius); padding: 30px 34px; font: 500 25px/1.75 var(--mono); overflow-x: auto; }
+pre.code span { display: block; padding: 0 10px; margin: 0 -10px; border-radius: 6px; transition: background .25s; }
+pre.code span.hl { background: color-mix(in srgb, var(--accent) 45%, var(--ink)); }
+pre.code i { font-style: normal; color: var(--line); }
+.rule { font-size: 30px; line-height: 1.3; padding: 18px 22px; border-radius: 12px; border: 2px solid var(--paper); transition: background .25s, border-color .25s; }
+.rule.hl { background: var(--tint); border-color: var(--accent); }
+
+/* caption bar under an animated diagram: .cap text and .counter chip */
+.capbar { display: flex; align-items: center; justify-content: space-between; gap: 30px; min-height: 92px;
+  border-top: 2px solid var(--paper); padding-top: 18px; margin-top: auto; }
+.cap { font: 500 32px/1.3 var(--body); max-width: 1050px; }
+.cap b { color: var(--accent); }
+.counter { font: 700 22px var(--mono); background: var(--paper); padding: 12px 18px; border-radius: 10px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.counter:empty { visibility: hidden; }
+
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: start; }
+.big-q { font: var(--title-weight) 130px/1 var(--display); }
+
+/* tiles: flat squares, each holding one big shape. Colors come from role tokens, so any
+   design can use them. Tile color .t-*, shape color .s-*, shape .circle .half .arch
+   .triangle .stair .band .ellipse .eye, crop with .crop-l/-r/-t/-b, enlarge with .huge.
+   Text on a tile: one big number or word only (.big). */
+.tiles { display: grid; grid-template-columns: repeat(var(--cols, 3), 1fr); }
+.tile { position: relative; overflow: hidden; aspect-ratio: 1; background: var(--t, var(--ink)); }
+.tile .big { position: absolute; left: 28px; top: 18px; z-index: 1; font: var(--title-weight) 110px/1 var(--display); color: var(--on-t, var(--card)); }
+.t-ink { --t: var(--ink); --on-t: var(--card); }
+.t-card { --t: var(--card); --on-t: var(--ink); }
+.t-accent { --t: var(--accent); --on-t: var(--on-accent, var(--card)); }
+.t-tint { --t: var(--tint); --on-t: var(--ink); }
+.t-go { --t: var(--go); --on-t: var(--on-go, var(--card)); }
+.t-stop { --t: var(--stop); --on-t: var(--on-stop, var(--card)); }
+.t-pop { --t: var(--pop, var(--accent)); --on-t: var(--ink); }
+.s-ink { --s: var(--ink); } .s-card { --s: var(--card); } .s-accent { --s: var(--accent); } .s-tint { --s: var(--tint); }
+.s-go { --s: var(--go); } .s-stop { --s: var(--stop); } .s-pop { --s: var(--pop, var(--accent)); }
+.shape { position: absolute; background: var(--s, var(--card)); }
+.circle { inset: 14%; border-radius: 50%; }
+.half { left: 0; right: 0; bottom: 0; height: 50%; border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
+.arch { left: 22%; right: 22%; top: 14%; bottom: 0; border-radius: 999px 999px 0 0; }
+.triangle { inset: 12%; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.stair { inset: 0; clip-path: polygon(0 100%, 0 66.7%, 33.3% 66.7%, 33.3% 33.3%, 66.7% 33.3%, 66.7% 0, 100% 0, 100% 100%); }
+.band { inset: 0; clip-path: polygon(0 62%, 62% 0, 100% 0, 100% 38%, 38% 100%, 0 100%); }
+.ellipse { left: 0; right: 0; top: 24%; bottom: 24%; border-radius: 50%; }
+.eye { left: 20%; top: 20%; width: 60%; height: 60%; border-radius: 0 100%; rotate: -45deg; }
+.eye::after { content: ""; position: absolute; inset: 31%; border-radius: 50%; background: var(--t, var(--ink)); }
+.crop-l { translate: -38% 0; } .crop-r { translate: 38% 0; } .crop-t { translate: 0 -38%; } .crop-b { translate: 0 38%; }
+.huge { scale: 1.45; }
+/* tile layouts: a band under the title, or a column of 3 tiles on the right edge */
+.tile-band { position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(6, 1fr); }
+.tile-col { position: absolute; top: 0; right: 0; bottom: 0; width: 300px; display: grid; grid-template-rows: repeat(3, 1fr); }
+.tile-col .tile { aspect-ratio: auto; }
+.slide.tiled-right { padding-right: 400px; }
+.slide.tiled-right.active ~ #foot { right: 400px; }
+.slide.tiled-bottom.active ~ #foot { opacity: 0; }
+#foot { transition: opacity .3s, right .3s; }
+
+/* cut-out objects from assets/media/objects (any design): drop in with a small bounce and a
+   soft contact shadow. <div class="cutout"><img src="<path>/objects/dice.png" alt="dice"></div>
+   Add .corner-object to pin a small one to the top-right corner. A design sets --shadow
+   (transparent = flat, no shadow). */
+.cutout { position: relative; align-self: center; display: grid; place-items: center; }
+.cutout svg, .cutout img { width: 300px; height: auto; filter: drop-shadow(0 22px 18px var(--shadow, rgba(0, 0, 0, .25))); }
+.cutout::after { content: ""; width: 300px; height: 34px; margin-top: 8px; border-radius: 50%; background: var(--shadow, rgba(0, 0, 0, .25)); filter: blur(14px); opacity: .8; }
+.slide.active .cutout:not([data-step]), .cutout[data-step].on { animation: drop-in .7s cubic-bezier(.3, 1.5, .5, 1) both; }
+.cutout[data-step].on { opacity: 1; transform: none; transition: none; }
+@keyframes drop-in { 0% { opacity: 0; transform: translateY(-160px); } 60% { opacity: 1; transform: translateY(10px); } 100% { transform: none; } }
+.corner-object { position: absolute; right: 64px; top: 52px; }
+.corner-object img { width: auto; height: 124px; max-width: 190px; rotate: 5deg; }
+.corner-object::after { width: 70%; height: 14px; margin-top: 0; }
+
+/* @@DESIGN-PARTS-START */
+/* GENERATED by make_shapes.py css: block outlines (each keeps 92% of its box) and motif masks */
+:root {
+  --cut-1: polygon(2.28% 1.25%, 48.34% 1.04%, 99.05% 3.62%, 96.66% 56.77%, 93.50% 97.84%, 46.60% 98.72%, 1.77% 98.76%, 1.08% 56.80%);
+  --cut-2: polygon(2.94% 1.56%, 52.39% 0.65%, 95.37% 3.27%, 99.44% 52.10%, 99.32% 96.18%, 39.19% 99.33%, 3.74% 93.05%, 0.76% 45.60%);
+  --cut-3: polygon(1.71% 5.14%, 52.97% 3.04%, 98.88% 1.48%, 99.90% 47.58%, 94.46% 99.32%, 46.48% 99.68%, 2.00% 96.89%, 2.33% 51.74%);
+  --cut-4: polygon(0.07% 4.89%, 52.48% 3.00%, 98.62% 1.26%, 98.44% 54.60%, 98.36% 95.24%, 44.27% 98.28%, 0.16% 98.99%, 2.13% 47.68%);
+  --cut-5: polygon(0.85% 4.72%, 47.32% 0.16%, 96.66% 3.36%, 99.07% 51.34%, 98.48% 98.55%, 49.06% 99.56%, 4.85% 94.23%, 2.19% 57.18%);
+  --cut-6: polygon(4.98% 5.83%, 50.34% 1.55%, 97.33% 7.54%, 99.57% 46.33%, 98.40% 98.39%, 43.18% 99.63%, 0.37% 97.86%, 0.51% 51.11%);
+  --m-house: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M8.0 49.4L21.3 37.9L36.6 23.9L50.6 11.2L64.7 24.2L77.3 36.6L91.3 49.7L83.5 50.1L84.1 69.3L83.9 89.8L66.4 89.9L49.5 90.7L32.3 90.0L15.8 90.4L16.1 69.9L16.0 49.7Z' fill='%23fff'/%3E%3Cpath d='M43.2 61.3L58.5 62.8L59.1 76.2L58.7 90.4L43.0 90.4L43.5 76.4Z M23.7 56.6L34.8 56.2L34.5 68.7L23.8 67.5Z M66.8 55.9L77.5 55.2L77.1 67.8L66.6 67.4Z' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-tower: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M26.3 6.5L42.7 5.2L57.4 6.0L74.2 5.5L74.0 23.8L74.0 42.1L73.8 60.4L73.6 78.8L73.2 95.8L57.3 95.8L42.1 96.7L26.0 96.6L26.1 78.8L26.6 59.6L26.7 41.3L25.4 24.3Z' fill='%23fff'/%3E%3Cpath d='M34.9 17.6L45.5 18.7L45.9 30.5L34.9 29.6Z M34.3 41.6L46.7 42.8L46.0 54.4L35.0 53.6Z M35.1 66.2L46.1 65.5L45.9 77.3L35.5 78.0Z M54.6 18.7L64.4 18.3L65.2 29.4L54.4 29.5Z M53.2 41.9L64.3 42.5L65.7 53.6L54.7 54.2Z M53.5 65.9L64.4 66.3L65.5 78.1L54.6 77.9Z' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-door: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M24.7 95.9L24.4 75.7L24.8 54.7L23.9 33.7L33.9 14.7L49.2 5.7L66.6 13.6L76.5 33.6L76.8 55.3L75.3 75.8L76.7 95.4L58.8 95.6L40.8 95.4Z' fill='%23fff'/%3E%3Cpath d='M34.0 40.0L47.7 39.2L47.7 64.3L33.6 64.0Z M52.9 40.6L65.9 40.8L65.5 64.3L52.7 64.7Z M68.5 76.2L67.7 79.1L63.9 79.6L60.9 78.2L61.0 73.9L64.7 71.4L67.7 72.8Z' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-key: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M50.6 50.6L48.4 60.0L41.2 68.4L32.8 71.9L21.3 72.0L13.3 68.3L6.1 59.9L3.4 50.7L7.0 40.5L12.8 31.7L22.4 27.6L32.4 27.3L40.9 32.2L48.5 39.7Z M44.7 42.6L61.6 43.3L78.2 43.7L95.6 43.1L95.4 65.9L85.5 65.2L86.3 56.2L77.5 55.5L78.7 64.7L68.8 64.2L68.3 56.2L44.4 56.4Z' fill='%23fff'/%3E%3Cpath d='M34.4 49.9L33.4 53.5L31.3 56.4L27.8 58.6L23.1 58.2L18.7 56.7L16.6 53.7L15.2 50.0L16.2 45.7L19.5 43.6L22.6 41.7L27.1 40.5L31.3 43.6L33.5 45.5Z' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-pin: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M49.5 95.8L40.6 82.6L32.7 68.8L24.1 55.3L18.4 35.4L26.5 16.4L44.8 5.7L59.6 5.5L76.3 17.4L81.9 35.5L75.5 56.6L67.1 68.7L58.8 82.7Z' fill='%23fff'/%3E%3Cpath d='M63.8 36.7L62.9 42.4L58.9 48.7L52.6 51.0L46.2 50.1L41.6 48.3L37.3 43.6L36.4 37.4L37.6 31.6L41.0 26.2L46.5 23.7L52.9 24.0L59.2 26.8L62.9 30.3Z' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-sun: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M94.9 40.4L77.1 53.8L89.9 71.9L67.9 69.9L67.0 92.1L50.5 77.1L35.1 94.0L33.3 70.7L11.3 73.9L23.3 55.2L4.1 42.5L26.8 37.5L19.5 16.1L39.9 24.3L48.1 4.6L59.4 24.3L78.8 14.2L72.7 35.6Z' fill='%23fff'/%3E%3Cpath d='M63.4 50.1L61.3 56.3L58.4 59.4L53.6 63.2L47.1 62.3L42.2 60.0L38.2 56.2L36.3 50.7L38.7 43.6L41.3 39.3L47.7 37.6L52.3 38.1L58.2 39.4L62.1 44.6Z' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-hill: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M2.7 86.3L10.1 70.8L18.1 53.8L26.1 37.5L33.7 49.0L41.4 60.1L50.0 46.1L58.1 32.6L65.4 18.8L74.6 34.9L81.7 51.5L90.0 69.4L98.0 85.7L79.4 86.3L60.2 85.9L41.0 86.0L21.3 86.4Z' fill='%23fff'/%3E%3Cpath d='M66.2 18.2L71.9 31.1L78.5 43.7L69.8 40.2L64.1 52.7L60.3 34.2Z' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-tree: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M49.4 3.8L65.9 18.1L75.8 41.7L72.4 64.4L55.7 74.0L54.6 95.6L45.4 96.5L45.4 73.8L28.3 64.0L23.4 41.3L33.3 17.8Z' fill='%23fff'/%3E%3Cpath d='M48.7 29.7L52.3 30.3L50.8 50.7L50.9 69.8L49.1 70.4L47.9 49.7Z' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-flower: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M69.3 24.2L66.0 36.4L53.4 43.2L39.7 41.0L31.0 30.6L30.6 17.7L39.2 7.0L52.8 4.1L64.7 10.8Z M95.8 50.3L91.9 63.3L80.2 69.6L66.4 66.6L57.2 56.2L57.1 42.6L66.0 32.1L78.8 30.1L91.2 36.8Z M70.7 75.4L64.8 89.0L53.2 95.5L39.7 93.2L31.5 82.8L31.7 68.5L40.5 59.4L54.2 55.8L66.1 63.9Z M43.6 50.2L39.9 62.5L27.3 68.9L13.7 67.4L5.8 56.5L6.0 43.1L14.4 33.0L27.0 31.1L38.7 36.4Z M69.7 49.2L65.8 63.2L54.0 70.1L40.2 67.6L32.0 56.9L31.8 43.7L40.6 32.1L53.1 30.3L65.8 37.3Z' fill='%23fff'/%3E%3Cpath d='M62.1 50.8L58.2 59.1L49.6 62.4L41.9 58.2L37.8 49.4L42.0 41.0L50.3 38.6L58.3 41.8Z' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-person: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M69.6 26.6L66.5 35.8L59.4 42.9L50.8 46.3L40.4 44.2L32.9 35.7L31.6 26.9L32.8 17.3L40.5 10.3L50.0 8.7L58.7 10.7L67.2 17.7Z M13.2 93.5L18.6 67.4L33.7 53.8L49.5 54.7L66.0 53.4L81.8 68.7L86.7 94.4L68.5 93.4L49.9 93.3L32.8 94.6Z' fill='%23fff'/%3E%3Cpath d='' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-paper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M19.4 5.7L41.8 5.3L63.4 6.4L82.6 24.6L82.5 41.6L82.5 59.7L81.6 77.0L81.7 93.6L61.5 94.5L40.3 94.0L20.1 93.6L19.8 76.9L20.2 58.4L20.3 42.0L20.7 23.3Z' fill='%23fff'/%3E%3Cpath d='M31.5 32.8L50.9 32.5L70.6 31.2L69.6 39.8L50.9 39.4L32.3 39.2Z M32.4 49.7L50.3 50.4L69.8 50.2L70.2 57.6L50.9 57.6L31.5 57.0Z M31.7 68.3L55.9 67.7L56.2 74.3L31.6 75.8Z' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M72.6 40.0L69.1 54.7L61.2 65.7L46.9 72.4L32.8 72.5L19.0 65.9L10.2 53.7L6.4 39.5L9.8 25.5L20.2 14.3L33.2 8.5L47.6 8.2L60.2 14.1L69.7 25.4Z M57.6 65.8L65.3 57.9L80.8 72.6L96.0 86.4L86.6 95.4L71.6 81.0Z' fill='%23fff'/%3E%3Cpath d='M60.8 40.8L57.6 50.5L50.2 57.1L40.5 59.8L30.1 57.0L23.3 50.2L20.3 40.1L22.5 29.6L29.4 22.2L40.0 20.1L50.0 22.9L57.2 29.5Z' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-chart: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M8.0 58.8L28.0 57.4L27.4 75.0L28.2 92.1L8.5 92.2L8.2 74.5Z M40.1 36.2L60.6 36.4L59.6 55.3L60.2 73.4L60.3 92.6L40.4 91.9L39.8 73.6L39.6 55.3Z M71.8 10.6L91.9 10.4L92.2 25.6L92.8 42.3L91.3 59.4L92.3 76.3L91.8 91.3L71.5 92.0L71.9 75.7L72.7 59.5L72.3 43.0L72.0 27.2Z' fill='%23fff'/%3E%3Cpath d='' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-network: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M65.3 19.7L63.5 29.9L55.4 35.5L45.4 35.8L36.5 29.0L34.7 20.6L37.5 10.4L44.6 4.3L54.8 5.3L63.1 11.2Z M33.7 78.2L31.6 87.1L23.2 93.3L13.5 93.8L4.6 86.8L2.4 78.3L5.1 68.0L12.7 62.0L23.6 62.4L30.9 69.3Z M98.7 78.1L94.3 87.3L86.8 93.3L76.6 92.9L69.8 87.3L65.8 77.5L69.2 68.8L77.7 62.4L87.2 62.4L95.2 69.2Z M45.9 23.7L53.5 23.3L44.3 42.2L35.4 60.6L25.3 79.5L16.6 76.4L25.3 58.0L35.3 41.0Z M46.7 24.7L53.3 23.5L63.2 40.8L73.9 58.0L84.5 75.9L74.7 80.1L65.4 60.7L55.7 42.8Z M17.3 73.7L33.4 73.4L49.3 74.1L66.0 74.6L81.5 74.1L81.9 82.0L66.0 81.3L50.7 81.6L33.6 82.6L17.9 81.2Z' fill='%23fff'/%3E%3Cpath d='' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-screen: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M5.5 11.2L24.0 12.7L41.7 12.4L58.6 12.7L76.4 11.4L94.3 11.7L93.4 32.0L94.2 52.4L93.9 71.2L76.1 72.6L58.5 71.8L41.8 72.3L23.3 71.6L6.3 71.9L6.7 52.6L5.2 32.7Z M40.6 72.6L59.3 72.3L63.7 88.5L50.1 87.2L36.6 87.5Z M26.7 86.0L41.5 85.5L58.1 86.1L73.9 86.1L73.2 93.0L58.2 93.2L42.0 93.1L26.2 93.3Z' fill='%23fff'/%3E%3Cpath d='M14.4 20.5L32.8 20.5L50.0 21.4L66.9 20.6L84.2 20.3L85.0 42.3L85.1 63.6L67.0 63.0L50.2 62.7L32.9 62.2L15.2 62.4L14.7 41.8Z' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-phone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M25.6 3.5L41.9 4.0L58.3 3.7L73.6 4.2L74.0 22.0L74.4 40.3L73.7 59.7L74.5 77.2L74.7 96.1L58.2 96.3L42.1 95.7L25.9 95.8L26.0 77.8L25.9 59.9L26.1 41.6L25.6 22.6Z' fill='%23fff'/%3E%3Cpath d='M33.9 13.9L49.7 13.8L65.8 14.8L66.1 35.0L65.4 55.3L65.2 76.4L50.3 75.7L34.6 75.2L34.0 55.5L33.9 34.4Z M55.7 86.6L52.8 89.1L50.5 91.3L46.7 88.8L44.2 85.3L47.1 83.0L49.5 81.2L54.3 82.4Z' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M8.7 54.5L23.9 37.7L42.4 56.6L53.4 41.3L66.7 28.5L78.4 14.4L93.7 29.3L81.3 44.0L68.5 58.9L55.8 73.7L43.4 87.8L31.7 76.1L20.3 66.1Z' fill='%23fff'/%3E%3Cpath d='' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-cross: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M13.8 26.7L25.8 13.4L37.6 26.6L50.4 37.3L62.2 25.6L74.5 13.5L86.0 26.1L74.6 37.9L61.9 50.3L74.5 61.3L85.6 74.1L74.0 86.5L62.1 73.3L50.0 62.2L37.3 73.8L26.6 85.5L14.7 74.2L26.8 61.4L37.7 49.6L25.7 37.4Z' fill='%23fff'/%3E%3Cpath d='' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-question: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M21.8 34.5L25.6 15.2L41.5 5.5L61.7 8.3L76.3 20.1L77.8 38.4L68.1 51.4L57.5 60.2L58.1 69.5L41.3 69.8L41.7 54.7L55.6 43.6L60.3 33.7L56.7 25.1L45.8 23.7L40.6 34.5Z M41.5 78.3L57.6 79.4L58.4 93.9L42.3 93.2Z' fill='%23fff'/%3E%3Cpath d='' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-box: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M7.3 29.2L21.5 22.5L35.8 15.5L49.6 7.5L63.2 16.0L78.5 22.1L91.4 29.4L92.7 52.7L91.2 74.4L78.8 80.7L63.3 87.5L49.2 95.3L35.7 88.2L22.0 80.3L8.1 74.1L7.6 52.8Z' fill='%23fff'/%3E%3Cpath d='M47.1 52.1L53.2 51.6L52.6 68.8L52.9 86.1L46.7 86.0L46.9 69.8Z M14.7 34.6L18.4 32.5L34.1 39.5L50.8 46.8L65.2 40.0L81.3 31.9L85.1 34.6L66.8 43.7L49.7 53.2L32.1 44.8Z' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-letter: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M5.4 19.9L24.2 19.6L41.7 20.4L58.3 19.9L76.4 19.9L94.6 19.7L94.4 40.9L93.3 62.1L93.8 81.4L77.1 82.7L59.2 82.0L41.9 82.3L23.9 82.0L5.4 82.6L6.6 60.6L6.5 40.9Z' fill='%23fff'/%3E%3Cpath d='M12.8 26.4L19.9 25.8L35.4 37.6L50.5 50.7L65.2 38.2L79.7 25.5L88.0 26.2L76.1 37.3L63.0 49.2L49.4 59.9L37.0 48.2L25.2 37.1Z' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M5.4 39.8L22.7 40.2L38.7 39.8L53.7 39.8L54.2 18.1L67.3 28.4L80.3 38.8L94.5 49.5L80.1 60.5L67.4 70.9L53.3 82.0L53.3 59.5L37.2 60.2L22.2 60.2L5.9 60.4Z' fill='%23fff'/%3E%3Cpath d='' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-list: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M7.8 12.4L25.5 11.3L25.9 29.2L7.7 30.6Z M8.4 41.4L25.4 40.4L25.7 59.1L8.7 59.5Z M7.8 70.2L26.6 69.7L26.3 87.6L7.9 87.9Z M35.3 15.1L55.0 14.6L73.5 15.5L92.0 15.4L91.4 26.3L73.7 26.3L54.5 27.3L36.1 27.0Z M36.2 44.7L54.1 43.6L73.3 44.6L92.6 43.2L91.3 55.4L73.1 55.2L54.6 55.6L36.3 55.7Z M36.3 72.5L55.0 73.2L73.5 73.5L91.8 73.7L91.5 84.2L73.5 85.8L55.4 84.5L36.1 84.4Z' fill='%23fff'/%3E%3Cpath d='' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M94.2 49.8L91.4 67.0L80.7 81.3L66.4 90.3L50.6 93.5L33.3 90.9L19.2 80.9L8.9 66.6L5.7 49.5L10.0 33.1L18.9 18.7L33.0 10.0L49.5 5.9L66.5 9.1L80.9 19.1L90.5 32.9Z' fill='%23fff'/%3E%3Cpath d='M45.4 19.5L54.4 19.7L54.6 33.7L54.4 47.7L76.8 58.2L71.4 66.3L59.7 59.0L46.5 52.7L46.1 37.2Z' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-bulb: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M50.8 3.4L71.4 9.3L83.9 29.8L80.5 48.4L66.6 61.9L63.3 74.3L50.5 74.8L36.2 74.4L33.7 62.1L20.7 47.9L15.3 29.9L28.3 10.0Z M37.1 77.2L62.9 78.6L63.2 85.2L36.7 85.1Z M40.7 87.4L59.6 87.2L58.7 95.2L40.7 94.7Z' fill='%23fff'/%3E%3Cpath d='' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-lock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M16.5 43.7L33.1 43.9L49.6 44.6L66.7 43.2L84.1 44.6L84.6 60.3L84.4 76.8L84.0 94.4L67.0 94.7L49.9 93.9L33.2 93.5L16.0 93.4L16.6 77.3L15.8 59.9Z M25.3 46.2L26.4 24.0L38.5 7.9L62.0 8.5L73.8 24.5L74.0 45.7L61.3 45.7L61.9 28.5L55.3 19.5L44.6 20.0L37.9 27.5L38.5 45.2Z' fill='%23fff'/%3E%3Cpath d='M58.1 65.5L55.1 70.6L50.2 72.3L44.6 70.0L41.4 64.6L43.8 58.7L49.3 57.7L55.8 60.1Z M46.7 67.5L52.3 67.7L52.2 82.8L46.3 81.8Z' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-unlock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M16.1 46.6L33.0 46.3L50.4 45.9L66.5 46.2L84.1 45.8L84.5 61.3L83.3 77.5L84.5 93.8L67.0 94.2L50.5 93.3L33.7 93.5L16.6 93.4L15.8 78.5L16.2 62.4Z M25.9 47.5L26.3 22.0L37.7 5.3L61.7 6.2L73.8 21.2L73.9 31.3L62.1 31.8L61.9 25.3L55.6 18.2L43.2 17.9L37.8 26.3L37.4 48.7Z' fill='%23fff'/%3E%3Cpath d='M58.2 64.7L56.0 71.1L50.8 73.2L44.1 70.0L42.7 65.2L45.0 59.4L50.4 57.6L56.4 58.8Z M46.6 67.8L53.4 67.6L52.7 81.5L46.9 82.2Z' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-book: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M4.3 17.9L28.6 12.6L48.6 19.5L47.3 37.4L48.5 54.2L48.6 71.8L47.7 89.7L28.2 82.5L4.4 87.8L3.8 70.0L4.2 53.6L3.7 36.0Z M51.6 20.2L72.4 12.2L95.4 17.4L96.1 36.2L95.3 53.6L95.7 71.0L96.1 88.6L71.6 81.9L52.3 90.6L52.3 72.0L52.0 54.2L52.4 38.1Z' fill='%23fff'/%3E%3Cpath d='M14.2 33.2L38.7 34.1L38.7 39.8L14.1 39.6Z M14.1 50.1L38.2 50.6L38.4 56.7L13.3 56.1Z M61.9 33.6L86.0 34.6L85.5 39.7L62.8 40.4Z M62.0 50.7L85.8 49.6L86.7 56.2L62.2 56.4Z' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-code: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M30.8 22.6L39.5 32.3L22.4 50.6L39.9 68.1L29.6 77.3L16.1 64.7L1.7 50.5L16.7 35.3Z M70.4 21.5L84.7 36.5L98.5 50.0L83.8 64.0L69.8 78.5L60.6 68.7L78.6 49.2L60.1 31.3Z M54.0 13.2L62.3 16.9L58.5 34.6L54.4 51.0L50.5 69.1L46.0 86.5L37.3 82.9L41.5 65.3L46.2 49.2L50.2 32.0Z' fill='%23fff'/%3E%3Cpath d='' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-cart: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M2.0 14.2L19.8 14.8L25.0 29.9L42.7 30.8L59.9 29.6L76.5 30.1L94.0 29.8L89.8 46.7L83.3 63.9L66.6 64.8L48.7 63.7L32.2 64.8L22.5 44.6L14.0 23.3L1.5 23.6Z M48.8 80.6L46.0 86.1L40.5 88.8L35.6 89.2L30.5 86.4L28.1 79.8L30.3 74.6L34.7 70.7L40.9 69.7L45.8 73.8Z M84.0 80.4L82.4 86.2L77.0 89.3L71.7 89.5L65.5 85.6L64.3 80.7L65.2 73.6L70.8 71.2L77.0 70.7L81.5 73.9Z' fill='%23fff'/%3E%3Cpath d='' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-campus: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M4.7 36.5L19.6 27.2L35.3 16.8L50.1 7.6L65.4 18.0L80.1 26.8L96.3 35.5L96.6 44.8L78.0 43.3L59.4 44.0L41.0 44.5L23.1 43.3L4.8 43.6Z M12.7 48.7L23.5 47.7L23.3 66.3L23.5 83.4L12.6 84.5L11.5 65.9Z M34.4 48.4L45.9 47.6L46.4 66.3L46.0 83.9L34.4 84.8L34.8 66.7Z M54.2 47.6L66.5 47.6L66.4 66.1L65.6 83.7L54.3 84.6L54.5 65.2Z M75.5 48.6L88.7 47.5L88.0 65.2L87.3 84.0L75.9 83.2L76.1 66.8Z M3.7 85.4L22.1 86.5L40.9 85.3L59.8 86.1L77.5 85.8L95.6 85.7L95.9 94.7L78.3 94.6L59.1 94.6L40.4 95.2L22.6 95.5L3.4 95.1Z' fill='%23fff'/%3E%3Cpath d='M55.5 27.7L54.1 32.2L50.5 33.9L45.0 32.3L44.0 27.2L45.3 24.2L50.6 21.3L54.3 23.4Z' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+  --m-sprig: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cmask id='m'%3E%3Cpath d='M47.5 3.2L51.6 3.9L52.8 21.6L52.7 40.3L52.4 59.6L52.1 77.5L51.5 95.9L47.4 96.5L48.7 77.0L48.6 58.7L48.5 40.6L48.2 22.5Z M50.4 84.4L55.5 69.8L67.4 62.5L81.0 62.3L74.3 75.8L63.2 83.5Z M49.6 84.4L33.3 83.6L24.6 74.1L19.4 62.9L33.9 64.2L45.1 71.0Z M49.7 60.0L54.7 44.9L66.7 39.6L79.1 39.7L73.7 51.7L62.9 59.5Z M49.5 60.7L33.9 60.2L24.9 52.1L20.3 39.9L33.7 41.9L45.6 48.4Z M49.8 35.3L54.8 23.0L64.6 18.8L76.0 17.9L69.9 29.9L61.8 36.3Z M50.8 36.2L35.6 36.9L28.5 29.4L23.6 17.8L35.9 19.3L45.6 24.9Z' fill='%23fff'/%3E%3Cpath d='' fill='%23000'/%3E%3C/mask%3E%3Cpath d='M0 0H100V100H0Z' mask='url(%23m)'/%3E%3C/svg%3E");
+}
+.motif.house { --m: var(--m-house); }
+.motif.tower { --m: var(--m-tower); }
+.motif.door { --m: var(--m-door); }
+.motif.key { --m: var(--m-key); }
+.motif.pin { --m: var(--m-pin); }
+.motif.sun { --m: var(--m-sun); }
+.motif.hill { --m: var(--m-hill); }
+.motif.tree { --m: var(--m-tree); }
+.motif.flower { --m: var(--m-flower); }
+.motif.person { --m: var(--m-person); }
+.motif.paper { --m: var(--m-paper); }
+.motif.search { --m: var(--m-search); }
+.motif.chart { --m: var(--m-chart); }
+.motif.network { --m: var(--m-network); }
+.motif.screen { --m: var(--m-screen); }
+.motif.phone { --m: var(--m-phone); }
+.motif.check { --m: var(--m-check); }
+.motif.cross { --m: var(--m-cross); }
+.motif.question { --m: var(--m-question); }
+.motif.box { --m: var(--m-box); }
+.motif.letter { --m: var(--m-letter); }
+.motif.arrow { --m: var(--m-arrow); }
+.motif.list { --m: var(--m-list); }
+.motif.clock { --m: var(--m-clock); }
+.motif.bulb { --m: var(--m-bulb); }
+.motif.lock { --m: var(--m-lock); }
+.motif.unlock { --m: var(--m-unlock); }
+.motif.book { --m: var(--m-book); }
+.motif.code { --m: var(--m-code); }
+.motif.cart { --m: var(--m-cart); }
+.motif.campus { --m: var(--m-campus); }
+.motif.sprig { --m: var(--m-sprig); }
+
+/* ---- brown slides ---- */
+.slide { background: var(--card); }
+.slide.stage {
+  --card: var(--iron); --paper: var(--iron); --ink: var(--clay); --muted: var(--clay); --line: var(--clay);
+  --accent: var(--clay); --on-accent: var(--iron); --tint: var(--iron); --stop: var(--iron); --on-stop: var(--clay);
+}
+/* ---- flat: no shadows, no fades (a fade is a fourth color). Slides pan like walking past ---- */
+#stage, #hint { box-shadow: none; }
+#panel-btn { opacity: 1; border: 0; border-radius: 0; background: var(--iron); color: var(--clay); }
+#panel-btn kbd { border-color: currentColor; }
+#hint, kbd, .thumb, .thumb .mini { border-radius: 0; }
+.slide { opacity: 1; transform: translateX(100%); transition: transform .5s cubic-bezier(.25, .8, .25, 1), visibility 0s .5s; }
+.slide.past { transform: translateX(-100%); }
+.slide.active { transform: none; transition: transform .5s cubic-bezier(.25, .8, .25, 1); }
+.thumb .slide.clone { transition: none; }
+[data-step] { transform: translateY(24px); transition: transform .3s cubic-bezier(.25, .8, .25, 1); }
+[data-step].on { transform: none; }
+.grid-table span, .rule, pre.code span { transition: none; }
+#dots { display: none; }
+#foot { font-weight: 700; font-size: 20px; color: var(--ink); }
+.slide.stage.active ~ #foot { color: var(--clay); }
+.slide.active:has(.sect) ~ #foot #deckname, .slide.active:has(.street-line) ~ #foot { visibility: hidden; }
+.thumb.now { background: var(--ink); color: var(--card); }
+.thumb.now .mini { border-color: var(--hi); }
+
+/* ---- type: one heavy grotesque, tight; body in the same family ---- */
+h1, h2, h3, .big-q { word-spacing: .08em; }
+h2 { font-size: 78px; line-height: .98; }
+h3 { font-weight: 900; }
+.eyebrow { font-size: 20px; letter-spacing: 0; text-transform: none; color: var(--ink); }
+.lede { font-size: 32px; line-height: 1.35; }
+.big-q { font-size: 200px; line-height: .9; letter-spacing: -.04em; text-transform: uppercase; }
+.big-q em, .stage h2 em { font-style: normal; color: var(--hi); }   /* turquoise words: brown slides only */
+.points li::before { width: 20px; height: 20px; top: 13px; border-radius: 0; background: var(--ink); clip-path: var(--cut-2); }
+/* key words on a clay slide: a turquoise strip behind brown text (bold, 24px+) */
+.mark { background: var(--hi); color: var(--on-hi); font-weight: 700; padding: .28em .5em; margin-left: -.5em; display: inline-block;
+  clip-path: polygon(0 4px, 48% 0, 100% 3px, calc(100% - 5px) 100%, 45% calc(100% - 3px), 4px calc(100% - 1px)); }
+.points li:has(> .mark)::before { display: none; }
+
+/* ---- blocks: at most about six on a slide, each big enough to read from the back ----
+   <div class="block">..</div>  + .hi turquoise, .line outlined. Set width and height; text
+   inside stays straight. <div class="blocks"> lays out 2-6 uneven tiles with captions:
+   <div class="bk"><div class="block"><i class="motif key"></i></div><h3>Keys</h3><p>..</p></div> */
+.block { position: relative; background: var(--ink); color: var(--card); clip-path: var(--cut, var(--cut-1)); display: grid; place-items: center; box-sizing: border-box; }
+.block.hi { background: var(--hi); color: var(--on-hi); }
+.block.line { color: var(--ink); isolation: isolate; }
+.block.line::before { content: ""; position: absolute; inset: 5px; z-index: -1; background: var(--card); clip-path: var(--cut, var(--cut-1)); }
+.c1 { --cut: var(--cut-1); } .c2 { --cut: var(--cut-2); } .c3 { --cut: var(--cut-3); }
+.c4 { --cut: var(--cut-4); } .c5 { --cut: var(--cut-5); } .c6 { --cut: var(--cut-6); }
+.motif { display: block; width: 60%; aspect-ratio: 1; background: currentColor; -webkit-mask: var(--m, linear-gradient(transparent, transparent)) center / contain no-repeat; mask: var(--m, linear-gradient(transparent, transparent)) center / contain no-repeat; }
+.block > .motif { width: min(74%, 330px); height: 66%; aspect-ratio: auto; }
+.block > b { font: 900 170px/1 var(--display); letter-spacing: -.04em; }
+.blocks { display: flex; gap: 16px; align-items: stretch; flex: 1; min-height: 0; max-height: 600px; margin-top: 14px; }
+.bk { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; }
+.bk .block { flex: 1; min-height: 120px; margin-bottom: 16px; }
+.bk h3 { font: 700 38px/1.1 var(--body); letter-spacing: -.01em; padding-left: 6px; }
+.bk p { font: 500 27px/1.3 var(--body); padding: 8px 10px 0 6px; min-height: 2.9em; }
+.bk:nth-child(5n+1) { --cut: var(--cut-1); margin-top: 12px; } .bk:nth-child(5n+2) { --cut: var(--cut-2); flex-grow: .94; margin-top: 40px; }
+.bk:nth-child(5n+3) { --cut: var(--cut-3); flex-grow: 1.1; } .bk:nth-child(5n+4) { --cut: var(--cut-4); flex-grow: .98; margin-top: 30px; } .bk:nth-child(5n+5) { --cut: var(--cut-5); flex-grow: 1.04; margin-top: 8px; }
+.sect .block > .motif { width: 72%; height: 72%; }
+/* picture block: a drawn scene (make_shapes.py) or an object on brown */
+.pic { width: 560px; height: 700px; --cut: var(--cut-3); overflow: hidden; }
+.stage .block.pic { background: var(--iron); }
+.pic > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* chart of blocks drawn to size: give the total and each value, the rest is computed. Every
+   outline keeps the same share of its box, so area is exactly proportional to --v.
+   <div class="plots" style="--total:100"> <div class="block plot" style="--v:80">; --r is width / height */
+.plots { --unit: calc(390000 * var(--fit, 1) / var(--total, 100)); display: flex; gap: 22px; align-items: flex-start; min-width: 0; }
+.plots .col { display: flex; flex-direction: column; gap: 18px; }
+.plot { flex: none; width: calc(sqrt(var(--v) * var(--unit) * var(--r, .84)) * 1px); height: calc(sqrt(var(--v) * var(--unit) / var(--r, .84)) * 1px); }
+.plot > b, .plot > div > b { font: 900 60px/1 var(--display); letter-spacing: -.04em; }
+.plotrow { display: flex; align-items: center; gap: 18px; font: 700 30px var(--body); }
+
+/* ---- progress tile, bottom left: which part of the talk this is ---- */
+.sect { position: absolute; left: 100px; bottom: 26px; display: grid; grid-template-columns: 76px auto; column-gap: 18px; align-items: center; z-index: 6; font: 700 26px/1.15 var(--body); color: var(--ink); }
+.slide:has(> .sect) { padding-bottom: 150px; }
+.sect .block { width: 76px; height: 76px; grid-row: span 2; --cut: var(--cut-2); }
+.sect b { align-self: end; } .sect small { align-self: start; font: 500 20px/1.2 var(--body); }
+
+/* ---- poster (title) slide ---- */
+.slide.poster { padding: 0; display: block; }
+.poster .frame { position: absolute; left: 64px; top: 54px; width: 1472px; height: 636px;
+  --cut: polygon(14px 22px, 48% 2px, calc(100% - 6px) 14px, 100% 52%, calc(100% - 14px) calc(100% - 4px), 40% 100%, 5px calc(100% - 12px), 0 55%); }
+.poster .frame > svg { position: absolute; inset: 14px 0 -14px; width: 100%; height: 100%; }
+.poster h1 { position: absolute; left: 36px; top: 34px; width: 1420px; color: var(--clay); font-size: 174px; line-height: .95; font-weight: 900; letter-spacing: -.04em; text-transform: uppercase; }
+.poster h1.long { font-size: 126px; line-height: .95; }
+.poster .frame { will-change: transform; }
+.poster .parts { position: absolute; left: 84px; top: 722px; display: flex; gap: 24px; align-items: flex-start; }
+.poster .parts div { display: grid; justify-items: center; gap: 8px; font: 700 24px/1 var(--body); }
+.poster .parts .block { width: 122px; height: 100px; }
+.poster .parts .block > .motif { width: 74%; height: 74%; }
+.poster .parts div:nth-child(2n) { margin-top: -6px; }
+.poster .parts div:nth-child(1) .block { --cut: var(--cut-1); } .poster .parts div:nth-child(2) .block { --cut: var(--cut-2); } .poster .parts div:nth-child(3) .block { --cut: var(--cut-3); }
+.poster .parts div:nth-child(4) .block { --cut: var(--cut-4); } .poster .parts div:nth-child(5) .block { --cut: var(--cut-5); }
+.poster .who { position: absolute; right: 100px; top: 752px; text-align: right; font: 700 26px/1.4 var(--body); }
+.poster .who small { display: block; font: 500 22px/1.4 var(--body); }
+.slide.poster.active ~ #foot { visibility: hidden; }
+/* the engine's own title slide, for decks without a poster picture */
+.title-slide h1 { text-transform: uppercase; }
+.title-slide h1 span { color: inherit; }
+.stage.title-slide h1 span { color: var(--hi); }
+.title-col { border-top-width: 4px; }
+/* a drawn street along the bottom edge of a brown slide */
+.street-line { position: absolute; left: 0; bottom: 0; width: 1600px; height: 230px; }
+.street-line svg { width: 100%; height: 100%; display: block; }
+
+/* ---- street: a list, array or table as houses, for step-by-step slides ----
+   Street.draw(el, lots) (in starter.html, DECK-JS). Solid = waiting. States: empty (outline),
+   out (dashed: ruled out), rej (dashed, struck: checked and dropped), now (raised, arrow:
+   looking), hit (turquoise: found). A house can have several floors (a chain, a stack). */
+.street { display: flex; gap: 14px; align-items: flex-end; margin-top: auto; border-bottom: 8px solid var(--ink); padding-top: 60px; }
+.street { justify-content: center; }
+.lot { position: relative; flex: 0 1 var(--lot, 200px); min-width: 0; text-align: center; transition: transform .35s cubic-bezier(.25, .8, .25, 1); }
+.lot svg { display: block; width: 100%; overflow: visible; }
+.lot path { fill: var(--ink); stroke: var(--ink); stroke-width: 6; stroke-linejoin: round; }
+.lot text { fill: var(--card); font-family: var(--display); font-weight: 900; letter-spacing: -.03em; text-anchor: middle; }
+.lot small { position: absolute; left: -10px; right: -10px; bottom: -50px; font: 700 26px/1 var(--body); color: var(--ink); }
+.lot.empty path, .lot.out path, .lot.rej path, .lot g.empty path, .lot g.out path, .lot g.rej path { fill: var(--card); }
+.lot.out path, .lot.rej path, .lot g.out path, .lot g.rej path { stroke-dasharray: 14 12; }
+.lot.out text, .lot.rej text, .lot g.out text, .lot g.rej text { fill: var(--ink); }
+.lot.rej text, .lot g.rej text { text-decoration: line-through; text-decoration-thickness: 7px; }
+.lot.now { transform: translateY(-34px); }
+.lot.now small { bottom: -84px; }
+.lot.now::before { content: ""; position: absolute; left: calc(50% - 26px); top: -52px; width: 52px; height: 36px; background: var(--hi); clip-path: polygon(0 0, 100% 2px, 52% 100%); }
+.lot.hit path, .lot g.hit path { fill: var(--hi); stroke: var(--iron); } .lot.hit text, .lot g.hit text { fill: var(--on-hi); }
+.slide > .street + .capbar { border-top: 0; padding-top: 64px; margin-top: 0; min-height: 60px; }
+.slide:has(> .street) { padding-bottom: 130px; }
+
+/* ---- send: parties in a row, one item on its way (Send.draw in starter.html) ---- */
+.send { position: relative; display: flex; justify-content: space-around; align-items: flex-start; margin: auto 0; padding-top: 176px; }
+.send::before { content: ""; position: absolute; left: 8%; right: 8%; top: 70px; border-top: 8px dashed var(--ink); }
+.party { position: relative; flex: 1; display: grid; justify-items: center; gap: 12px; text-align: center; }
+.party .block { width: 250px; height: 240px; }
+.party b { font: 700 38px/1 var(--body); } .party small { font: 500 26px/1.2 var(--body); min-height: 1.2em; }
+.item { position: absolute; top: 0; width: 140px; height: 140px; display: grid; place-items: center; gap: 0; background: var(--hi); color: var(--on-hi); border: 7px solid var(--iron); box-sizing: border-box;
+  transition: left .45s cubic-bezier(.25, .8, .25, 1); z-index: 2; }
+.stage .item { border-color: var(--iron); }
+.item .motif { width: 62%; height: 62%; aspect-ratio: auto; grid-area: 1 / 1; } .item b:empty { display: none; } .item b:not(:empty) { font: 900 30px/1 var(--display); align-self: end; }
+.item:has(b:not(:empty)) .motif { grid-area: auto; height: 60px; }
+sup, sub { line-height: 0; }
+
+/* ---- shared parts, in three flat colors ---- */
+.card { border: 0; background: var(--ink); color: var(--card); clip-path: polygon(8px 10px, 52% 0, calc(100% - 4px) 12px, 100% 54%, calc(100% - 10px) calc(100% - 3px), 46% 100%, 4px calc(100% - 9px), 0 48%); padding: 30px 40px; }
+.cards .card:nth-child(even) { clip-path: polygon(2px 3px, 46% 9px, calc(100% - 9px) 2px, calc(100% - 2px) 45%, 100% calc(100% - 10px), 55% calc(100% - 2px), 8px 100%, 4px 52%); }
+.card h3 { font-size: 40px; font-weight: 900; } .card p, .card .tag, .card .n { color: var(--card); }
+.card .tag { letter-spacing: 0; text-transform: none; font-size: 22px; }
+.card.dark { background: var(--hi); } .card.dark h3, .card.dark p, .card.dark .tag, .card.dark .n { color: var(--on-hi); }
+.card.dark p { font-weight: 600; }
+.grid-table { border-radius: 0; overflow: visible; }
+.slide > .grid-table { font-size: 34px; margin-top: 18px; }
+.slide > .grid-table span { padding: 34px 28px; }
+.grid-table span { border-bottom: 4px solid var(--ink); }
+.grid-table .th span { box-shadow: 1px 0 0 var(--ink); background: var(--ink); color: var(--card); font-size: 24px; letter-spacing: 0; text-transform: none; }
+.grid-table .row.win span { box-shadow: 1px 0 0 var(--hi); background: var(--hi); color: var(--on-hi); font-weight: 700; }
+.grid-table .row.win span:first-child { color: var(--on-hi); }
+.split:has(> pre.code), .cards { flex: 0 1 auto; margin-top: 14px; }
+.slide > .cards { flex: 1; min-height: 0; max-height: 480px; }
+pre.code { background: var(--iron); color: var(--clay); border-radius: 0; font-variant-ligatures: none; padding: 34px 0; }
+.stage pre.code { outline: 4px solid var(--clay); }
+pre.code span { border-radius: 0; margin: 0; padding: 0 38px; }
+pre.code span.hl { background: var(--hi); color: var(--on-hi); font-weight: 700; }
+pre.code i, pre.code span.hl i { color: inherit; }
+code { background: none; border-radius: 0; padding: 0; font-weight: 700; }
+.rule { border: 0; border-left: 8px solid var(--ink); border-radius: 0; padding: 14px 24px; }
+.rule.hl { background: var(--hi); color: var(--on-hi); font-weight: 700; }
+.capbar { border-top: 4px solid var(--ink); }
+.cap b { color: inherit; }
+.counter { background: var(--ink); color: var(--card); border-radius: 0; font-size: 24px; }
+/* tiles from the engine: the same hand-cut outline */
+.tile { clip-path: var(--cut-1); } .tile:nth-child(2n) { clip-path: var(--cut-2); } .tile:nth-child(3n) { clip-path: var(--cut-3); }
+.tile .big { left: 44px; top: 34px; }
+
+/* ---- pictures from assets/media: two flat colors, shown on a brown block ----
+   (the hex values below are clay and iron as 0-1 numbers: an SVG filter cannot read tokens) */
+.slide img:not(.photo img, .shot img, .logo) { filter: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='d' color-interpolation-filters='sRGB'%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='discrete' tableValues='.2745 .8157'/%3E%3CfeFuncG type='discrete' tableValues='.1098 .7373'/%3E%3CfeFuncB type='discrete' tableValues='.0471 .6745'/%3E%3CfeFuncA type='discrete' tableValues='0 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3C/svg%3E#d"); }
+/* .logo (school or company), .photo and .shot keep their real colors */
+/* ---- project pictures: the one place where real colors are allowed ----
+   .photo  a real-world photo, cropped to a hand-cut outline on a brown edge (no faces or text at the rim)
+           --x: 50%; --y: 20% picks the part that stays visible, --zoom: 1.4 crops in; .tall for portrait photos
+   .shot   a screenshot, figure or chart, never cropped, straight on a brown block; Clay.fit (starter.html) sizes it
+   <figure class="photo"><div><img src=".." alt=".."></div><figcaption>..</figcaption></figure>
+   <figure class="shot"><div><span class="fit"><img src=".." alt=".."></span></div></figure>
+   Number things with <b class="spot" style="left:30%;top:40%">1</b> inside .fit, next to a <ul class="points nums"> */
+.photo, .shot { margin: 0; display: flex; flex-direction: column; gap: 16px; min-height: 0; min-width: 0; }
+.photo > div { position: relative; flex: 1; min-height: 0; background: var(--iron); overflow: hidden;
+  clip-path: polygon(10px 16px, 50% 2px, calc(100% - 5px) 14px, 100% 50%, calc(100% - 13px) calc(100% - 3px), 42% 100%, 4px calc(100% - 13px), 0 54%); }
+.slide.stage .photo > div { background: var(--clay); }
+.photo img { position: absolute; inset: 9px; width: calc(100% - 18px); height: calc(100% - 18px); object-fit: cover; object-position: var(--x, 50%) var(--y, 50%); --o: calc(1 - 1 / var(--zoom, 1));
+  object-view-box: inset(calc(var(--o) * var(--y, 50%)) calc(var(--o) * (100% - var(--x, 50%))) calc(var(--o) * (100% - var(--y, 50%))) calc(var(--o) * var(--x, 50%)));
+  clip-path: polygon(10px 16px, 50% 2px, calc(100% - 5px) 14px, 100% 50%, calc(100% - 13px) calc(100% - 3px), 42% 100%, 4px calc(100% - 13px), 0 54%); }
+.photo.tall { width: 470px; height: 640px; justify-self: center; }
+.shot > div { display: grid; place-items: center; padding: 36px; background: var(--iron); flex: 1; min-height: 0;
+  clip-path: polygon(8px 14px, 52% 2px, calc(100% - 14px) 8px, calc(100% - 2px) 48%, 100% calc(100% - 12px), 46% calc(100% - 2px), 14px 100%, 2px 56%); }
+.slide.stage .shot > div { background: var(--clay); }
+.shot .fit { position: relative; display: block; width: 100%; line-height: 0; }
+.shot img { display: block; width: 100%; height: auto; max-height: none; background: white; }
+.photo > div:empty::after, .shot .fit:empty::after { content: "your picture here"; display: grid; place-items: center; height: 100%; min-height: 300px; font: 700 30px var(--body); line-height: 1; color: var(--clay); }
+.slide.stage .photo > div:empty::after { color: var(--iron); }
+.photo figcaption, .shot figcaption { font: 500 26px/1.3 var(--body); }
+.photo figcaption b, .shot figcaption b { font-weight: 700; }
+.spot { position: absolute; width: 48px; height: 48px; translate: -50% -50%; display: grid; place-items: center; background: var(--turq); color: var(--iron);
+  border: 4px solid var(--iron); box-sizing: border-box; font: 900 28px/1 var(--display); }
+.points.nums { counter-reset: n; }
+.points.nums li { counter-increment: n; padding-left: 68px; }
+.points.nums li::before { content: counter(n); left: 0; top: -2px; width: 48px; height: 48px; display: grid; place-items: center; background: var(--turq); color: var(--iron);
+  border: 4px solid var(--iron); box-sizing: border-box; clip-path: none; font: 900 28px/1 var(--display); }
+.pics { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; flex: 1; min-height: 0; }
+.pics.three { grid-template-columns: repeat(3, 1fr); gap: 22px; }
+.slide > .photo, .slide > .shot { flex: 1; }
+.slide > .split:has(> .photo, > .shot) { flex: 1; min-height: 0; align-items: stretch; }
+.slide > .split:has(> .photo.tall) { align-items: center; }
+
+.cutout { background: var(--iron); clip-path: var(--cut-2); padding: 54px 60px; }
+.cutout::after { display: none; }
+.cutout.corner-object { padding: 18px 24px; }
+.slide.active .cutout:not([data-step]), .cutout[data-step].on { animation: cb-in .5s cubic-bezier(.25, .8, .25, 1) both; }
+@keyframes cb-in { from { transform: translateY(60px); } to { transform: none; } }
+
+/* ---- decks that come from Paper & Stage: its extra parts, calmed down ---- */
+.hud, .arcs, .grid-bg, .halftone, .pin-card > .pin { display: none; }
+.phrase { margin: auto 0; display: flex; flex-wrap: wrap; gap: 0 .24em; font: 900 130px/.95 var(--display); letter-spacing: -.04em; }
+.phrase .key { background: var(--hi); color: var(--on-hi); padding: 0 .14em; }
+.pin-card { align-self: center; width: min(760px, 100%); box-sizing: border-box; background: var(--iron); color: var(--clay); padding: 54px 60px; clip-path: var(--cut-2); }
+.pin-card h3 { font-size: 50px; margin: 0 0 24px; }
+.pin-card ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; }
+.pin-card li { display: flex; align-items: center; gap: 18px; font: 600 32px/1.2 var(--body); }
+.pin-card svg { width: 40px; height: 40px; fill: none; stroke: currentColor; stroke-width: 2.6; }
+/* @@DESIGN-PARTS-END */
+
+/* @@DECK-CSS-START */
+/* @@DECK-CSS-END */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0s !important; animation: none !important; }
+}
+</style>
+
+<button id="panel-btn" type="button" aria-controls="panel" aria-expanded="false">☰ Slides <kbd>S</kbd></button>
+<nav id="panel" aria-label="All slides"><div id="panel-list"></div></nav>
+
+<div id="viewport"><div id="frame"><div id="stage" role="region" aria-label="Slides" tabindex="0">
+<!-- @@SLIDES-START -->
+
+<!-- POSTER: the title. 2 lines of up to 11 capitals, or <h1 class="long"> for 3 lines of up to 16.
+     Scene: poster (a house), campus, or ground <1-5 motifs that fit your topic>. 3-5 section tiles. -->
+<section class="slide poster" data-id="poster" data-title="Title">
+  <div class="frame block"><h1>Find the<br>right house</h1><svg viewBox="0 0 1472 636" aria-hidden="true"><path d="M495.3 668.6L536.6 627.5L576.1 587.9L614.2 547.6L654.1 506.5L694.3 464.4L742.4 440.6L787.8 411.6L836.5 387.8L891.3 365.6L947.9 344.2L992.4 363.2L1034.6 380.5L1100.2 400.3L1164.7 416.3L1231.6 389.5L1296.2 362.3L1344.2 349.8L1396.7 337.7L1443.3 364.3L1491.8 389.2L1541.2 416.8L1539.0 479.8L1540.1 544.5L1540.9 605.7L1541.9 668.5L1478.3 671.0L1415.8 670.0L1353.9 670.7L1295.4 670.3L1234.4 669.3L1172.3 670.4L1110.4 669.8L1050.1 671.8L987.2 670.7L924.1 670.8L865.1 672.0L804.3 669.1L741.2 670.7L678.3 669.8L617.5 668.5L555.6 671.1Z" fill="var(--clay)" stroke="var(--iron)" stroke-width="14" stroke-linejoin="round"/><path d="M-45.5 505.0L10.6 462.5L64.3 415.8L126.2 381.5L187.3 345.5L225.1 370.7L265.4 399.5L307.8 420.6L344.7 444.9L389.9 421.9L436.4 397.1L514.0 369.7L570.5 408.3L627.8 446.8L669.4 476.5L713.4 504.2L757.6 537.1L797.5 562.2L835.6 585.6L834.4 670.5L775.6 668.3L717.5 668.6L659.4 668.2L599.3 668.6L541.1 669.5L482.1 671.5L425.8 668.6L365.7 669.4L307.5 668.5L250.7 672.0L190.5 669.9L130.3 668.4L72.7 669.1L16.0 668.6L-45.9 671.8L-43.9 613.9L-43.8 558.8Z" fill="var(--clay)" stroke="var(--iron)" stroke-width="14" stroke-linejoin="round"/><path d="M914.1 403.3L934.1 419.8L941.3 449.6L936.6 477.6L919.7 489.2L917.4 497.2L911.0 499.4L909.4 489.3L891.4 477.6L885.2 450.0L894.6 418.0Z" fill="var(--iron)"/><path d="M1226.7 403.4L1248.4 419.3L1260.3 444.9L1255.3 469.3L1235.5 477.4L1231.6 485.2L1222.8 485.2L1222.1 478.9L1202.9 467.9L1197.4 445.8L1205.8 419.2Z" fill="var(--iron)"/><path d="M1289.1 422.8L1305.7 434.5L1312.1 457.8L1308.5 477.4L1294.3 484.7L1291.2 493.3L1285.1 491.1L1282.0 484.0L1268.1 477.5L1262.0 457.9L1272.3 435.0Z" fill="var(--iron)"/><path d="M1359.6 380.1L1380.7 399.9L1388.2 420.5L1392.1 440.2L1386.7 473.1L1367.3 485.4L1363.8 497.4L1354.8 498.2L1352.9 486.0L1332.1 473.2L1327.6 438.9L1333.4 421.3L1338.0 402.4Z" fill="var(--iron)"/><path d="M366.0 438.1L385.8 458.3L390.2 477.9L393.6 498.8L389.4 531.5L372.4 546.2L369.6 558.1L362.1 558.8L359.1 546.2L340.9 531.0L337.8 498.0L341.8 479.5L347.4 459.4Z" fill="var(--iron)"/><path d="M422.3 464.0L437.7 481.1L444.9 510.1L441.3 537.0L427.2 547.9L426.5 555.3L418.9 557.2L418.4 545.8L401.6 535.6L397.8 509.3L405.2 481.0Z" fill="var(--iron)"/><path d="M-24.0 586.0L196.0 536.0L456.0 550.0L696.0 512.0L936.0 476.0L1176.0 466.0L1500.0 506.0L1500.0 670.0L-24.0 670.0Z" fill="var(--iron)"/><path d="M946.6 430.0L957.5 404.1L970.7 377.3L984.6 404.6L996.7 430.1L997.0 464.6L998.2 500.7L970.9 499.9L946.0 499.7L945.4 464.3ZM997.7 428.3L1024.2 429.1L1050.0 428.9L1078.0 429.3L1103.7 430.2L1105.2 463.1L1103.8 494.7L1076.8 496.9L1050.5 496.8L1023.9 499.6L997.9 499.5L996.5 465.5ZM970.6 378.5L997.5 376.9L1027.0 377.8L1053.6 379.1L1083.0 378.7L1095.1 405.7L1108.4 432.6L1081.3 431.3L1053.5 432.7L1024.7 430.8L997.3 431.1L982.9 404.0Z" fill="var(--iron)" stroke="var(--iron)" stroke-width="10" stroke-linejoin="round"/><path d="M946.6 430.0L957.5 404.1L970.7 377.3L984.6 404.6L996.7 430.1L997.0 464.6L998.2 500.7L970.9 499.9L946.0 499.7L945.4 464.3Z" fill="var(--clay)"/><path d="M997.7 428.3L1024.2 429.1L1050.0 428.9L1078.0 429.3L1103.7 430.2L1105.2 463.1L1103.8 494.7L1076.8 496.9L1050.5 496.8L1023.9 499.6L997.9 499.5L996.5 465.5Z" fill="var(--clay)"/><path d="M970.6 378.5L997.5 376.9L1027.0 377.8L1053.6 379.1L1083.0 378.7L1095.1 405.7L1108.4 432.6L1081.3 431.3L1053.5 432.7L1024.7 430.8L997.3 431.1L982.9 404.0Z" fill="var(--turq)"/><path d="M997.2 429.2L1000.3 429.2L1000.3 500.0L997.2 500.0Z" fill="var(--iron)"/><path d="M980.2 424.4L977.7 430.4L971.6 432.9L965.6 430.4L963.1 424.4L965.6 418.3L971.6 415.8L977.7 418.3Z" fill="var(--iron)"/><path d="M1016.2 448.4L1036.1 448.5L1036.6 468.0L1016.8 467.9Z" fill="var(--iron)"/><path d="M1062.9 448.2L1083.6 448.2L1084.1 472.6L1083.5 496.3L1063.6 495.9L1063.5 472.5Z" fill="var(--iron)"/><path d="M-24.0 544.8L45.7 548.0L116.5 553.2L182.3 562.1L249.8 571.0L315.8 579.6L369.9 588.6L425.0 599.6L480.4 607.7L535.0 618.8L591.6 629.1L644.8 638.7L699.5 649.9L699.2 689.9L639.1 691.1L580.5 690.1L518.4 691.1L458.2 689.7L397.1 689.7L337.9 690.0L276.9 690.0L216.1 689.4L156.0 689.8L95.6 688.9L35.9 689.4L-23.8 690.1L-23.4 617.4Z" fill="var(--clay)" stroke="var(--iron)" stroke-width="10"/><path d="M6 580C27.7 581.7 84.3 583.7 136 590C187.7 596.3 256.0 607.7 316 618C376.0 628.3 466.0 646.3 496 652" fill="none" stroke="var(--iron)" stroke-width="5" stroke-linecap="round"/><path d="M6 604C27.7 605.7 84.3 607.7 136 614C187.7 620.3 256.0 631.7 316 642C376.0 652.3 466.0 670.3 496 676" fill="none" stroke="var(--iron)" stroke-width="5" stroke-linecap="round"/><path d="M6 628C27.7 629.7 84.3 631.7 136 638C187.7 644.3 256.0 655.7 316 666C376.0 676.3 466.0 694.3 496 700" fill="none" stroke="var(--iron)" stroke-width="5" stroke-linecap="round"/></svg></div>
+  <div class="parts">
+    <div><div class="block"><i class="motif pin"></i></div>Location</div>
+    <div><div class="block"><i class="motif house"></i></div>House</div>
+    <div><div class="block"><i class="motif key"></i></div>Keys</div>
+  </div>
+  <div class="who">Presenter name<small>Course or occasion</small></div>
+</section>
+
+<!-- QUESTION: the hook or a section opener. 3 lines of up to 10 capitals, one turquoise part.
+     Bottom: street, street lit, or row <3-6 motifs>. -->
+<section class="slide stage" data-id="question" data-title="Question">
+  <div class="big-q">Would you<br>live here<br>at <em>night?</em></div>
+  <div class="street-line"><svg viewBox="0 0 1600 230" aria-hidden="true"><path d="M-30.6 166.7L13.0 138.5L55.1 111.5L95.9 140.0L138.3 167.8L138.5 240.5L83.1 243.2L25.3 241.0L-29.5 243.6Z" fill="var(--clay)"/><path d="M146.3 57.6L191.0 56.4L234.0 57.2L274.7 56.6L275.3 105.1L274.9 150.3L276.5 195.5L276.2 240.4L231.1 240.9L190.0 241.7L145.3 242.3L145.8 195.3L147.1 150.7L145.1 104.3Z" fill="var(--clay)"/><path d="M172.0 84.7L198.4 83.6L198.9 100.3L197.9 118.5L171.4 118.0L171.2 101.3Z" fill="var(--iron)"/><path d="M222.5 84.1L248.7 83.7L248.4 101.2L248.1 117.9L222.6 118.8L222.0 101.3Z" fill="var(--iron)"/><path d="M171.2 142.4L198.3 142.9L198.6 158.6L197.8 176.3L171.1 175.9L171.4 158.3Z" fill="var(--iron)"/><path d="M221.2 142.5L247.3 141.5L247.8 159.7L247.2 175.9L222.1 176.7L222.6 159.7Z" fill="var(--iron)"/><path d="M281.2 185.7L334.0 159.4L388.6 128.7L438.3 157.0L491.0 185.9L492.3 241.1L437.7 241.7L386.5 242.2L336.1 242.7L282.1 242.4Z" fill="var(--clay)"/><path d="M498.6 74.4L536.9 49.0L574.3 21.1L610.1 47.6L646.6 76.5L646.4 129.8L647.0 185.5L647.4 240.4L596.2 240.7L546.6 241.5L496.3 243.3L498.4 185.4L497.1 130.8Z" fill="var(--clay)"/><path d="M523.8 95.3L550.6 96.9L549.9 113.0L549.3 129.3L523.7 129.6L524.6 112.4Z" fill="var(--iron)"/><path d="M573.1 96.8L600.1 95.4L600.1 112.1L600.1 130.9L574.7 130.4L573.6 112.8Z" fill="var(--iron)"/><path d="M523.4 154.5L550.1 154.5L549.7 170.5L550.6 188.9L524.6 188.6L524.6 171.4Z" fill="var(--iron)"/><path d="M573.5 154.0L599.7 153.2L599.2 170.6L599.6 188.3L574.8 187.9L574.8 171.9Z" fill="var(--iron)"/><path d="M655.6 97.5L698.0 97.0L742.9 96.9L789.4 99.4L835.2 97.9L834.6 147.1L832.5 194.6L835.5 243.0L789.9 241.9L742.8 243.0L698.4 243.1L655.7 241.6L653.6 195.6L654.8 144.8Z" fill="var(--clay)"/><path d="M679.3 123.4L706.7 124.6L705.4 141.6L706.9 158.3L679.7 158.1L679.3 140.1Z" fill="var(--iron)"/><path d="M730.8 124.3L756.0 124.8L755.9 141.7L756.6 157.5L729.6 157.6L729.5 141.2Z" fill="var(--iron)"/><path d="M779.6 123.9L805.3 124.7L805.7 140.9L806.2 158.7L779.9 158.8L780.0 141.1Z" fill="var(--iron)"/><path d="M680.0 181.1L705.9 181.4L705.1 199.5L705.4 216.0L680.4 216.1L679.7 199.0Z" fill="var(--iron)"/><path d="M730.1 182.5L755.3 182.1L755.5 198.6L756.5 216.0L730.1 216.5L730.7 198.9Z" fill="var(--iron)"/><path d="M780.2 182.0L806.0 182.3L805.9 199.1L806.0 216.8L780.4 216.7L780.8 198.6Z" fill="var(--iron)"/><path d="M840.2 195.6L876.2 164.7L908.6 137.8L943.5 165.1L978.5 194.6L981.0 243.4L932.1 242.8L887.2 240.7L841.4 243.7Z" fill="var(--clay)"/><path d="M985.0 131.6L1040.6 102.0L1097.8 75.2L1149.8 101.8L1206.1 129.4L1204.9 185.3L1206.8 240.3L1151.2 241.8L1094.3 241.4L1041.4 242.0L984.4 243.7L987.0 187.7Z" fill="var(--clay)"/><path d="M1011.3 149.6L1037.2 150.5L1037.6 166.3L1037.9 184.7L1012.6 183.6L1011.4 167.8Z" fill="var(--iron)"/><path d="M1062.1 150.4L1087.3 149.2L1088.3 166.9L1087.2 184.8L1062.2 184.5L1061.3 167.6Z" fill="var(--turq)"/><path d="M1111.2 150.7L1137.9 149.7L1138.1 167.8L1137.6 183.3L1112.0 183.5L1111.3 166.4Z" fill="var(--iron)"/><path d="M1210.4 116.9L1264.7 117.3L1319.6 117.2L1372.0 116.8L1371.4 178.3L1371.1 240.3L1319.5 242.2L1264.2 241.9L1213.6 240.6L1213.1 179.8Z" fill="var(--clay)"/><path d="M1238.0 144.6L1263.8 144.0L1264.3 161.9L1263.7 178.6L1238.4 178.2L1237.8 160.7Z" fill="var(--iron)"/><path d="M1287.2 143.3L1313.2 144.4L1313.6 160.4L1313.3 178.6L1288.7 178.3L1287.6 160.5Z" fill="var(--iron)"/><path d="M1377.3 207.9L1421.8 189.1L1467.1 172.3L1514.7 152.2L1557.1 172.3L1602.3 188.8L1646.2 207.6L1647.9 242.0L1592.9 242.0L1538.2 241.2L1484.5 241.6L1430.4 240.3L1377.3 241.0Z" fill="var(--clay)"/></svg></div>
+</section>
+
+<!-- TILES: a list of 2-6 things (parts, steps, reasons). Caption: one short line or two. Turquoise
+     only on the one you talk about. Instead of a motif a block can hold a number: <b>3</b>. -->
+<section class="slide" data-id="tiles" data-title="Tiles">
+  <h2>Five things to check</h2>
+  <div class="blocks">
+    <div class="bk"><div class="block hi"><i class="motif pin"></i></div><h3>Location</h3><p>Ten minutes to a shop</p></div>
+    <div class="bk"><div class="block"><i class="motif hill"></i></div><h3>Land</h3><p>Dry and flat</p></div>
+    <div class="bk"><div class="block"><i class="motif house"></i></div><h3>House</h3><p>Roof first, paint last</p></div>
+    <div class="bk"><div class="block"><i class="motif sun"></i></div><h3>Light</h3><p>Sun in the living room</p></div>
+    <div class="bk"><div class="block"><i class="motif key"></i></div><h3>Keys</h3><p>Who owns it today?</p></div>
+  </div>
+  <div class="sect"><div class="block hi"><i class="motif pin"></i></div><b>Location</b><small>1 of 3</small></div>
+</section>
+
+<!-- TEXT AND DRAWING: 2-4 points beside a picture block. Scene: house, or pic <one motif>.
+     Headline beside a picture: up to 3 lines of about 17 letters. One .mark at most. -->
+<section class="slide" data-id="text" data-title="Text and drawing">
+  <div class="split" style="grid-template-columns:1fr 560px;gap:60px">
+    <div>
+      <h2>Visit the same house three times</h2>
+      <ul class="points" style="margin-top:56px">
+        <li><b>Morning.</b> Where does the sun come in?</li>
+        <li><b>Rush hour.</b> How loud is the street?</li>
+        <li><span class="mark">After rain. Does the garden stay wet?</span></li>
+      </ul>
+    </div>
+    <div class="block pic"><svg viewBox="0 0 560 700" aria-hidden="true"><path d="M525.2 147.9L494.3 174.3L521.1 207.2L477.7 212.8L483.3 253.9L445.8 234.3L429.6 275.1L406.6 237.1L373.4 262.4L374.1 218.4L333.9 216.7L356.8 183.1L319.0 159.6L358.0 145.9L340.4 106.8L383.4 112.9L389.2 70.3L418.2 98.9L448.3 68.4L457.7 109.4L498.4 96.7L487.1 138.1Z" fill="var(--clay)"/><path d="M469.3 316.2L484.4 339.6L499.2 360.4L504.4 386.6L507.3 415.1L511.0 441.0L508.5 464.8L508.3 487.9L506.3 510.5L492.4 526.3L478.6 540.9L476.8 567.2L464.0 566.5L460.4 541.6L448.6 527.4L435.6 510.4L432.2 488.1L428.9 464.2L427.1 439.9L431.2 415.1L435.9 387.0L441.1 362.0L454.5 338.4Z" fill="var(--clay)"/><path d="M400.1 409.1L421.3 436.0L424.6 458.8L429.6 484.1L428.9 503.0L424.3 524.2L405.3 543.0L404.4 557.3L394.4 557.8L393.6 543.2L376.1 525.5L372.4 504.3L370.5 481.8L375.9 459.8L380.6 435.8Z" fill="var(--clay)"/><path d="M45.8 434.3L60.2 403.3L75.1 370.6L90.4 339.3L103.1 362.7L114.8 386.6L127.3 410.6L139.6 435.2L140.7 466.4L140.0 499.4L140.2 531.6L141.2 566.0L108.9 565.0L76.7 564.2L45.7 564.5L46.7 531.7L45.0 500.7L46.1 466.4ZM140.6 433.6L168.8 435.5L197.8 434.9L224.9 434.2L253.0 435.0L282.0 435.1L309.9 433.9L339.1 435.5L339.2 465.5L339.1 495.7L338.0 525.7L338.2 555.1L309.3 556.8L281.4 559.0L254.6 559.8L226.2 562.1L198.0 562.2L168.2 563.2L139.9 564.4L140.7 533.2L141.2 499.7L140.8 467.7ZM90.0 340.4L121.6 340.7L150.7 339.9L178.9 340.7L208.9 340.7L240.0 339.8L268.2 341.1L298.5 339.2L309.5 363.9L323.7 390.2L334.3 415.0L348.7 439.4L317.6 439.1L287.5 437.8L259.9 439.4L229.3 440.0L199.5 439.9L170.9 438.3L139.9 438.5L127.5 414.5L115.2 389.3L102.5 365.7Z" fill="var(--clay)" stroke="var(--clay)" stroke-width="20" stroke-linejoin="round"/><path d="M45.8 434.3L60.2 403.3L75.1 370.6L90.4 339.3L103.1 362.7L114.8 386.6L127.3 410.6L139.6 435.2L140.7 466.4L140.0 499.4L140.2 531.6L141.2 566.0L108.9 565.0L76.7 564.2L45.7 564.5L46.7 531.7L45.0 500.7L46.1 466.4Z" fill="var(--clay)"/><path d="M140.6 433.6L168.8 435.5L197.8 434.9L224.9 434.2L253.0 435.0L282.0 435.1L309.9 433.9L339.1 435.5L339.2 465.5L339.1 495.7L338.0 525.7L338.2 555.1L309.3 556.8L281.4 559.0L254.6 559.8L226.2 562.1L198.0 562.2L168.2 563.2L139.9 564.4L140.7 533.2L141.2 499.7L140.8 467.7Z" fill="var(--clay)"/><path d="M90.0 340.4L121.6 340.7L150.7 339.9L178.9 340.7L208.9 340.7L240.0 339.8L268.2 341.1L298.5 339.2L309.5 363.9L323.7 390.2L334.3 415.0L348.7 439.4L317.6 439.1L287.5 437.8L259.9 439.4L229.3 440.0L199.5 439.9L170.9 438.3L139.9 438.5L127.5 414.5L115.2 389.3L102.5 365.7Z" fill="var(--iron)"/><path d="M140.5 434.5L146.1 434.5L146.1 565.0L140.5 565.0Z" fill="var(--iron)"/><path d="M109.0 425.5L104.4 436.6L93.2 441.2L82.1 436.6L77.5 425.5L82.1 414.4L93.2 409.8L104.4 414.4Z" fill="var(--iron)"/><path d="M176.3 470.4L194.6 471.0L212.4 471.0L212.5 488.5L212.5 505.9L194.4 506.1L175.9 506.9L176.1 488.5Z" fill="var(--iron)"/><path d="M262.3 470.6L280.9 470.5L300.3 470.8L299.8 492.5L299.9 514.1L300.6 536.3L300.3 558.6L281.6 558.2L262.1 558.3L262.0 536.5L261.9 514.4L262.0 493.0Z" fill="var(--iron)"/><path d="M36 580C61.3 578.3 142.7 572.2 188 570C233.3 567.8 264.7 566.7 308 567C351.3 567.3 411.3 569.8 448 572C484.7 574.2 514.7 578.7 528 580" fill="none" stroke="var(--clay)" stroke-width="9" stroke-linecap="round"/><path d="M36 620C61.3 618.3 142.7 612.2 188 610C233.3 607.8 264.7 606.7 308 607C351.3 607.3 411.3 609.8 448 612C484.7 614.2 514.7 618.7 528 620" fill="none" stroke="var(--clay)" stroke-width="5" stroke-linecap="round"/><path d="M36 660C61.3 658.3 142.7 652.2 188 650C233.3 647.8 264.7 646.7 308 647C351.3 647.3 411.3 649.8 448 652C484.7 654.2 514.7 658.7 528 660" fill="none" stroke="var(--clay)" stroke-width="5" stroke-linecap="round"/></svg></div>
+  </div>
+  <div class="sect"><div class="block hi"><i class="motif house"></i></div><b>House</b><small>2 of 3</small></div>
+</section>
+
+<!-- BLOCKS TO SIZE: compare 2-5 amounts. Set --total and each --v; areas come out exact. --r (width /
+     height) reshapes a block without changing its area. Labels: 1-2 short words.
+     A block under 2% of the total is too small to see: say it in words instead. -->
+<section class="slide" data-id="amounts" data-title="Blocks to size">
+  <div class="split" style="grid-template-columns:560px 1fr;gap:50px">
+    <div>
+      <h2>A fifth of the cash is not the house</h2>
+      <p class="lede" style="margin:40px 0 34px">Sample budget of 100.<br>Every block is drawn to size.</p>
+      <p style="font-size:34px"><span class="mark">Set repairs aside first.</span></p>
+    </div>
+    <div class="plots" style="--total:100">
+      <div class="block plot c3" style="--v:80;place-items:start;padding:56px 60px"><div><b style="font-size:170px">80</b><div style="font:700 38px var(--body)">House</div></div><i class="motif house" style="position:absolute;right:56px;bottom:60px;width:260px;height:260px"></i></div>
+      <div class="col">
+        <div class="plotrow"><div class="block hi plot c2" style="--v:10;--r:.62"><b>10</b></div>Repairs</div>
+        <div class="plotrow"><div class="block line plot c5" style="--v:6;--r:.9"><b>6</b></div>Fees</div>
+        <div class="plotrow"><div class="block line plot c1" style="--v:4;--r:1.3"><b>4</b></div>Moving</div>
+      </div>
+    </div>
+  </div>
+  <div class="sect"><div class="block hi"><i class="motif key"></i></div><b>Keys</b><small>3 of 3</small></div>
+</section>
+
+<!-- STREET: anything step by step (search, sort, hashing, a queue). 2-8 houses of 1-4 floors, labels up to 6
+     letters. Change the states in DECK-JS; compute them, do not type them. -->
+<section class="slide" data-id="street" data-title="Street (step by step)">
+  <h2>Find house 70</h2>
+  <div class="street"></div>
+  <div class="capbar"><p class="cap"></p><span class="counter"></span></div>
+  <div class="sect"><div class="block hi"><i class="motif house"></i></div><b>House</b><small>2 of 3</small></div>
+</section>
+
+<!-- SEND: someone sends something to someone (protocols, encryption, APIs, roles). 2-4 parties, names up to
+     12 letters. The item moves one step per press; put a listener between two parties to show who can see it. -->
+<section class="slide" data-id="send" data-title="Send (step by step)">
+  <h2>The letter passes through Nam</h2>
+  <div class="send"></div>
+  <div class="capbar"><p class="cap"></p></div>
+  <div class="sect"><div class="block hi"><i class="motif key"></i></div><b>Keys</b><small>3 of 3</small></div>
+</section>
+
+<!-- CODE: up to 9 lines of about 42 letters; rules and lines light up together with data-at. -->
+<section class="slide" data-id="code" data-title="Code">
+  <h2>One line moves right</h2>
+  <div class="split" style="grid-template-columns:420px 1fr">
+    <div class="points" style="gap:18px">
+      <div class="rule" data-at="1">1. Knock in the middle.</div>
+      <div class="rule" data-at="2">2. Too low? Go right.</div>
+    </div>
+<pre class="code"><span>let lo = 0, hi = street.length - 1;</span><span>while (lo &lt;= hi) {</span><span data-at="1">  const mid = (lo + hi) &gt;&gt; 1;</span><span>  if (street[mid] === want) return mid;</span><span data-at="2">  if (street[mid] &lt; want) lo = mid + 1;</span><span>  else hi = mid - 1;</span><span>}</span><span>return -1;</span></pre>
+  </div>
+  <div class="sect"><div class="block hi"><i class="motif house"></i></div><b>House</b><small>2 of 3</small></div>
+</section>
+
+<!-- TABLE: more than 6 items, or exact numbers. 3-5 rows; .win marks the row that matters. -->
+<section class="slide" data-id="table" data-title="Table">
+  <h2>Knocks needed, worst case</h2>
+  <div class="grid-table" style="--cols:3">
+    <div class="th"><span>Houses</span><span>One by one</span><span>Binary search</span></div>
+    <div class="row"><span>7</span><span class="mono">7</span><span class="mono">3</span></div>
+    <div class="row"><span>1,000</span><span class="mono">1,000</span><span class="mono">10</span></div>
+    <div class="row win"><span>1,000,000</span><span class="mono">1,000,000</span><span class="mono">20</span></div>
+  </div>
+  <div class="sect"><div class="block hi"><i class="motif house"></i></div><b>House</b><small>2 of 3</small></div>
+</section>
+
+<!-- BIG PHOTO: landscape photo. --x:50%;--y:20% picks the part that stays, --zoom:1.4 crops in (on the figure). Put
+     <img src="assets/photo.jpg" alt="..."> inside the empty div. -->
+<section class="slide" data-id="photo" data-title="Big photo">
+  <h2>One big photo</h2>
+  <figure class="photo"><div></div></figure>
+  <div class="sect"><div class="block hi"><i class="motif house"></i></div><b>House</b><small>2 of 3</small></div>
+</section>
+
+<!-- TWO PHOTOS: before / after, or two options (class="pics three" for three). -->
+<section class="slide" data-id="photos" data-title="Two photos">
+  <h2>Before and after</h2>
+  <div class="pics">
+    <figure class="photo"><div></div><figcaption><b>Before</b></figcaption></figure>
+    <figure class="photo"><div></div><figcaption><b>After</b></figcaption></figure>
+  </div>
+  <div class="sect"><div class="block hi"><i class="motif house"></i></div><b>House</b><small>2 of 3</small></div>
+</section>
+
+<!-- TALL PHOTO: a portrait phone photo beside the text. -->
+<section class="slide" data-id="tall" data-title="Tall photo and text">
+  <div class="split" style="grid-template-columns:1fr 520px;gap:60px">
+    <div>
+      <h2>A photo and its story</h2>
+      <ul class="points" style="margin-top:50px"><li>What the picture shows.</li><li>Why it matters.</li></ul>
+    </div>
+    <figure class="photo tall"><div></div></figure>
+  </div>
+  <div class="sect"><div class="block hi"><i class="motif house"></i></div><b>House</b><small>2 of 3</small></div>
+</section>
+
+<!-- SCREENSHOT, FIGURE or CHART IMAGE: never cropped. Any shape fits. If its text is small,
+     crop the image file to the part that matters first (at least 1000px wide, or it looks blurry). Spots go inside .fit, after the <img>: <b class="spot" style="left:30%;top:40%">1</b>. -->
+<section class="slide" data-id="shot" data-title="Screenshot">
+  <h2>Point at the screen</h2>
+  <div class="split" style="grid-template-columns:1fr 400px;gap:44px">
+    <figure class="shot"><div><span class="fit"></span></div></figure>
+    <ul class="points nums"><li>What to look at first.</li><li>What it changes.</li></ul>
+  </div>
+  <div class="sect"><div class="block hi"><i class="motif house"></i></div><b>House</b><small>2 of 3</small></div>
+</section>
+
+<!-- SUMMARY: the 3 things to remember, as tiles on brown. -->
+<section class="slide stage" data-id="summary" data-title="Summary">
+  <h2>Three things to <em>keep</em></h2>
+  <div class="blocks">
+    <div class="bk"><div class="block"><b>1</b></div><h3>Look at the place</h3><p>Location cannot be changed later.</p></div>
+    <div class="bk"><div class="block"><b>2</b></div><h3>Come back twice</h3><p>Light and noise change during the day.</p></div>
+    <div class="bk"><div class="block"><b>3</b></div><h3>Keep some cash</h3><p>Repairs come first.</p></div>
+  </div>
+</section>
+
+<!-- END -->
+<section class="slide stage" data-id="end" data-title="Questions">
+  <div class="big-q">Any<br><em>questions?</em></div>
+  <div class="street-line"><svg viewBox="0 0 1600 230" aria-hidden="true"><path d="M79.6 154.8L107.3 130.5L133.5 107.4L158.5 83.8L185.0 107.6L211.7 130.5L239.5 157.1L223.3 155.1L225.0 195.5L224.9 231.6L193.9 230.4L161.2 231.3L126.5 230.7L94.7 233.1L94.3 194.3L95.9 155.6Z" fill="var(--clay)"/><path d="M146.8 177.5L175.8 177.9L177.6 205.2L176.5 232.3L146.6 231.4L147.6 206.0Z" fill="var(--iron)"/><path d="M109.8 167.6L131.6 168.5L132.2 189.6L112.1 189.0Z" fill="var(--iron)"/><path d="M192.1 168.2L210.2 167.4L209.9 190.7L193.1 190.4Z" fill="var(--iron)"/><path d="M481.4 41.8L513.7 71.7L533.9 120.6L526.6 167.7L490.2 187.3L488.7 232.7L470.2 233.8L470.9 185.9L434.3 166.7L424.7 120.6L445.8 69.9Z" fill="var(--clay)"/><path d="M474.4 96.9L482.9 95.2L482.7 138.5L480.7 178.3L478.1 179.7L478.0 138.4Z" fill="var(--iron)"/><path d="M799.2 189.1L795.2 209.7L785.1 222.4L764.9 231.1L745.7 231.9L729.4 222.8L715.2 208.1L712.2 189.6L718.5 171.1L729.1 155.6L747.2 145.3L767.4 147.7L784.8 156.2L795.3 170.1Z" fill="var(--clay)"/><path d="M787.2 176.6L820.0 174.6L853.5 174.9L886.9 174.6L885.7 218.6L867.0 219.3L866.8 202.1L853.6 199.6L852.4 215.5L835.6 214.7L837.3 202.5L788.5 200.7Z" fill="var(--clay)"/><path d="M768.3 188.2L767.4 196.1L764.2 201.7L754.9 207.4L748.8 205.0L742.0 201.3L737.2 198.3L736.5 190.0L736.4 181.6L740.8 176.9L748.8 173.6L755.8 171.9L764.1 177.5L769.0 182.9Z" fill="var(--iron)"/><path d="M1071.7 47.5L1102.5 46.7L1135.9 44.9L1167.7 45.8L1168.5 84.4L1171.1 120.6L1171.1 159.6L1171.1 194.4L1168.4 231.0L1135.4 230.9L1104.0 233.5L1071.8 231.9L1071.1 196.0L1069.0 158.4L1072.1 121.8L1071.5 83.6Z" fill="var(--clay)"/><path d="M1088.0 72.3L1111.2 72.3L1113.3 95.7L1088.8 97.5Z" fill="var(--iron)"/><path d="M1089.8 119.7L1110.5 119.6L1113.1 146.5L1087.9 146.6Z" fill="var(--iron)"/><path d="M1090.7 170.7L1111.3 170.4L1110.5 193.3L1090.7 195.4Z" fill="var(--iron)"/><path d="M1128.3 72.7L1150.7 72.5L1152.0 95.1L1127.4 95.4Z" fill="var(--iron)"/><path d="M1127.4 121.0L1150.1 120.5L1149.7 146.8L1127.8 145.3Z" fill="var(--iron)"/><path d="M1128.5 171.5L1150.6 171.6L1150.9 195.0L1128.3 193.3Z" fill="var(--iron)"/><path d="M1525.5 130.7L1489.0 157.8L1515.7 190.8L1474.7 187.8L1471.4 230.5L1441.5 201.4L1410.9 232.2L1407.2 188.5L1366.4 194.8L1389.9 160.2L1355.0 136.0L1395.3 124.6L1382.2 84.3L1421.1 101.5L1437.7 63.3L1457.0 101.8L1496.0 80.0L1484.0 123.9Z" fill="var(--clay)"/><path d="M1465.7 148.0L1461.1 159.7L1454.1 167.7L1444.2 173.7L1435.4 174.4L1423.5 169.1L1418.2 158.8L1416.5 150.6L1416.9 139.8L1424.3 129.8L1436.0 126.1L1444.5 124.8L1455.4 129.3L1461.3 137.9Z" fill="var(--iron)"/><path d="M0.0 222.0L1600.0 222.0L1600.0 230.0L0.0 230.0Z" fill="var(--clay)"/></svg></div>
+</section>
+
+<!-- @@SLIDES-END -->
+<div id="foot"><span id="deckname"></span><div id="dots"></div><span id="count"></span></div>
+</div></div></div>
+<div id="hint"><kbd>→</kbd> or <kbd>Space</kbd> next · <kbd>←</kbd> back · <kbd>S</kbd> slides · <kbd>F</kbd> full screen</div>
+
+<script>
+/* ================= engine (shared by every deck) =================
+   Deck.register(slideId, { steps, init(slideEl), render(step, slideEl) })
+     steps  : number of states, the first one included (3 presses = 4); omit to count data-step / data-at
+     init   : runs once at start (build DOM for the animation)
+     render : runs on every step change; draw the state for `step` (must work going backwards)
+*/
+window.Deck = (() => {
+  const ctl = {};
+  let slides = [], cur = 0, step = 0;
+  const $ = s => document.querySelector(s);
+
+  const titleOf = s => s.dataset.title || (s.querySelector("h1, h2") || {}).textContent || "";
+  function stepCount(sl) {
+    const c = ctl[sl.dataset.id];
+    if (c && c.steps) return typeof c.steps === "function" ? c.steps() : c.steps;
+    let n = 0;
+    sl.querySelectorAll("[data-step]").forEach(e => n = Math.max(n, +e.dataset.step));
+    sl.querySelectorAll("[data-at]").forEach(e => n = Math.max(n, +e.dataset.at));
+    return n + 1;
+  }
+  function apply(sl, st) {
+    sl.querySelectorAll("[data-step]").forEach(e => e.classList.toggle("on", st >= +e.dataset.step));
+    sl.querySelectorAll("[data-at]").forEach(e => e.classList.toggle("hl", st === +e.dataset.at));
+    const c = ctl[sl.dataset.id];
+    if (c && c.render) c.render(st, sl);
+  }
+
+  function buildPanel() {
+    const list = $("#panel-list"); list.innerHTML = "";
+    slides.forEach((s, i) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "thumb" + (i === cur ? " now" : "");
+      b.innerHTML = `<span class="num">${i + 1}</span><div class="mini"></div><span class="t"></span>`;
+      b.querySelector(".t").textContent = titleOf(s);
+      const c = s.cloneNode(true);
+      c.classList.add("active", "clone"); c.classList.remove("past");
+      c.removeAttribute("data-id");
+      c.querySelectorAll("[id]").forEach(e => e.removeAttribute("id"));
+      c.querySelectorAll("[data-step]").forEach(e => e.classList.add("on"));
+      b.querySelector(".mini").appendChild(c);
+      b.addEventListener("click", e => { e.stopPropagation(); go(i, 0); });
+      list.appendChild(b);
+    });
+    const now = list.querySelector(".now");
+    if (now) now.scrollIntoView({ block: "nearest" });
+  }
+  function togglePanel(force) {
+    const open = force ?? !document.body.classList.contains("panel-open");
+    document.body.classList.toggle("panel-open", open);
+    $("#panel-btn").setAttribute("aria-expanded", open);
+    if (open) buildPanel();
+    setTimeout(fit, 0); setTimeout(fit, 320);
+  }
+
+  function show() {
+    slides.forEach((s, i) => { s.classList.toggle("active", i === cur); s.classList.toggle("past", i < cur); });
+    apply(slides[cur], step);
+    const total = stepCount(slides[cur]);
+    $("#dots").innerHTML = total > 1 ? Array.from({ length: total }, (_, i) => `<i class="${i <= step ? "on" : ""}"></i>`).join("") : "";
+    $("#count").textContent = `${cur + 1} / ${slides.length}`;
+    if (document.body.classList.contains("panel-open")) {
+      document.querySelectorAll(".thumb").forEach((t, i) => t.classList.toggle("now", i === cur));
+      const now = document.querySelector(".thumb.now"); if (now) now.scrollIntoView({ block: "nearest" });
+    }
+    try { history.replaceState(null, "", "#slide-" + (cur + 1)); } catch (e) {}
+  }
+  function go(i, st) { cur = Math.max(0, Math.min(slides.length - 1, i)); step = st === "last" ? stepCount(slides[cur]) - 1 : st; show(); }
+  function next() { step < stepCount(slides[cur]) - 1 ? (step++, show()) : cur < slides.length - 1 && go(cur + 1, 0); }
+  function prev() { step > 0 ? (step--, show()) : cur > 0 && go(cur - 1, "last"); }
+
+  // stage size comes from --stage-w / --stage-h (a design or deck can make it 9:16)
+  let SW = 1600, SH = 900;
+  function measure() {
+    const cs = getComputedStyle($("#stage"));
+    SW = parseFloat(cs.width) || 1600; SH = parseFloat(cs.height) || 900;
+    const tw = SW >= SH ? 200 : 120, r = document.documentElement.style;
+    r.setProperty("--thumb-w", tw + "px"); r.setProperty("--thumb-h", tw * SH / SW + "px"); r.setProperty("--thumb-s", tw / SW);
+  }
+  function fit() {
+    const panel = document.body.classList.contains("panel-open") ? 290 : 0;
+    const vw = document.documentElement.clientWidth - 32 - panel, vh = window.innerHeight - 24;
+    const s = Math.max(0.05, Math.min(vw / SW, vh / SH));
+    $("#frame").style.width = SW * s + "px"; $("#frame").style.height = SH * s + "px";
+    $("#stage").style.transform = `scale(${s})`;
+  }
+
+  function start() {
+    slides = [...document.querySelectorAll("#stage > .slide")];
+    $("#deckname").textContent = document.title;
+    for (const s of slides) { const c = ctl[s.dataset.id]; if (c && c.init) c.init(s); if (c && c.render) c.render(0, s); }
+    const hint = $("#hint"); let t = setTimeout(() => hint.classList.add("hide"), 6000);
+    const poke = () => { hint.classList.add("hide"); clearTimeout(t); };
+    document.addEventListener("keydown", e => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const k = e.key;
+      if (["ArrowRight", "ArrowDown", " ", "PageDown", "Enter"].includes(k)) { if (k === "Enter" && e.target.closest("button")) return; e.preventDefault(); poke(); next(); }
+      else if (["ArrowLeft", "ArrowUp", "PageUp", "Backspace"].includes(k)) { e.preventDefault(); poke(); prev(); }
+      else if (k === "Home") go(0, 0);
+      else if (k === "End") go(slides.length - 1, "last");
+      else if (k === "s" || k === "S") { poke(); togglePanel(); }
+      else if (k === "Escape") togglePanel(false);
+      else if (k === "f" || k === "F") {
+        const el = document.documentElement;
+        if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen().catch(() => {});
+        else if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+      }
+    });
+    $("#stage").addEventListener("click", e => {
+      poke(); const r = e.currentTarget.getBoundingClientRect();
+      (e.clientX - r.left < r.width * 0.25) ? prev() : next();
+    });
+    $("#panel-btn").addEventListener("click", () => { poke(); togglePanel(); });
+    measure(); window.addEventListener("resize", fit); fit();
+    const m = /^#slide-(\d+)$/.exec(location.hash);
+    go(m ? +m[1] - 1 : 0, 0);
+  }
+  return { register: (id, c) => { ctl[id] = c; }, start, go };
+})();
+</script>
+
+<script>
+/* @@DECK-JS-START */
+// Clay: keep this. It sizes pictures (.shot) and amount blocks (.plots) to the room they have.
+const Clay = {
+  fit() {
+    document.querySelectorAll("#stage .shot .fit > img").forEach(img => {
+      if (!img.naturalWidth) return;
+      const box = img.parentElement.parentElement;
+      img.style.width = "0";
+      const w = box.clientWidth - 72, h = Math.max(box.clientHeight - 72, 260);
+      const k = Math.min(w / img.naturalWidth, h / img.naturalHeight);
+      img.parentElement.style.width = "auto";
+      img.style.width = img.naturalWidth * k + "px";
+    });
+    document.querySelectorAll("#stage .plots").forEach(p => {
+      const room = () => p.scrollWidth <= p.clientWidth + 1 && p.offsetTop + p.offsetHeight <= (p.closest(".slide").querySelector(".sect") ? 770 : 830);
+      for (let k = 1.3; k > .25; k -= .05) { p.style.setProperty("--fit", k); if (room()) break; }
+    });
+  },
+};
+window.addEventListener("load", () => { Clay.fit(); document.fonts && document.fonts.ready.then(Clay.fit); });
+
+// Send helper: keep it if the deck has a .send slide. parties: [{ m: "person", n: "Lan", has: "key" }] (2-4).
+// item: { m: "letter", t: "33", at: 0.5 }: at 0 = first party, 1 = second, 0.5 = between them; null = nothing on the way.
+const Send = {
+  draw(el, parties, item) {
+    if (el.children.length !== parties.length + 1) {
+      el.innerHTML = parties.map((p, i) => `<div class="party c${i + 1}"><div class="block"><i class="motif"></i></div><b></b><small></small></div>`).join("") + `<div class="item"><i class="motif"></i><b></b></div>`;
+    }
+    parties.forEach((p, i) => {
+      const e = el.children[i];
+      e.querySelector(".motif").className = "motif " + p.m; e.querySelector("b").textContent = p.n; e.querySelector("small").textContent = p.has || "";
+    });
+    const it = el.lastElementChild;
+    it.style.visibility = item ? "visible" : "hidden";
+    if (!item) return;
+    it.querySelector(".motif").className = "motif " + (item.m || "letter");
+    it.querySelector("b").textContent = item.t || "";
+    it.style.left = `calc(${100 * (item.at + .5) / parties.length}% - 70px)`;
+  },
+};
+
+// Street helper: keep it if the deck has a .street slide.
+// lots: [{ t: "40", s: "now", note: "knock 1" }] or, for several floors (bottom first),
+//       [{ floors: [{ t: "LAN" }, { t: "CHI", s: "hit" }], note: "6" }]. s: empty out rej now hit, or nothing.
+const Street = {
+  draw(el, lots) {
+    const most = Math.max(...lots.map(l => l.floors ? l.floors.length : 1));   // fits few houses and tall houses too
+    el.style.setProperty("--lot", Math.min(200, 375 * 194 / (92 + most * 164)) + "px");
+    el.innerHTML = lots.map((l, i) => {
+      const fl = l.floors || [{ t: l.t ?? "" }], F = 164, H = 92 + fl.length * F, j = [0, 5, -4][i % 3];
+      const size = t => Math.min(62, 180 / Math.max(String(t).length, 2.6));
+      const floors = fl.map((f, k) => {
+        const y = H - F * (k + 1);
+        return `<g class="${f.s || ""}"><path d="M${17 + j / 2} ${y}L${177 - j / 2} ${y + 1}L${179 - k} ${y + F}L${15 + k} ${y + F}Z"/><text x="97" y="${y + F / 2 + size(f.t) * .36}" font-size="${size(f.t)}">${f.t}</text></g>`;
+      }).join("");
+      return `<div class="lot ${l.s || ""}"><svg viewBox="0 0 194 ${H}">${floors}<path d="M3 ${92 + j}L${97 + j * 2} 5L191 ${92 - j}Z"/></svg><small>${l.note ?? ""}</small></div>`;
+    }).join("");
+  },
+};
+
+// Example: binary search, one knock per press. The states are computed, not typed.
+(() => {
+  const A = [10, 20, 30, 40, 50, 60, 70], want = 70;
+  const S = [{ lo: 0, hi: A.length - 1, mid: -1, hit: false, seen: [], cap: "Houses are in order. We want number 70." }];
+  for (let lo = 0, hi = A.length - 1, seen = []; lo <= hi;) {
+    const mid = (lo + hi) >> 1, v = A[mid], hit = v === want;
+    seen = [...seen, mid];
+    S.push({ lo, hi, mid, hit, seen, cap: hit ? `<span class="mark">${v} found.</span>` : v < want ? `${v} is too low. Go right.` : `${v} is too high. Go left.` });
+    if (hit) break;
+    if (v < want) lo = mid + 1; else hi = mid - 1;
+    S.push({ lo, hi, mid: -1, hit: false, seen, cap: lo === hi ? `Only ${A[lo]} is left.` : `${A[lo]} to ${A[hi]} are left.` });
+  }
+  Deck.register("street", {
+    steps: S.length,
+    render(step, sl) {
+      const s = S[Math.min(step, S.length - 1)];
+      Street.draw(sl.querySelector(".street"), A.map((t, i) => {
+        const gone = i < s.lo || i > s.hi, k = s.seen.indexOf(i);
+        return { t, s: i === s.mid ? (s.hit ? "hit" : "now") : gone ? (k >= 0 ? "rej" : "out") : "", note: k >= 0 ? `knock ${k + 1}` : "" };
+      }));
+      sl.querySelector(".cap").innerHTML = s.cap;
+      sl.querySelector(".counter").textContent = `knocks: ${s.seen.length}`;
+    },
+  });
+})();
+
+// Example: one state per press.
+Deck.register("send", {
+  steps: 4,
+  render(step, sl) {
+    const P = [{ m: "person", n: "Lan" }, { m: "person", n: "Nam" }, { m: "person", n: "Hoa" }];
+    const S = [
+      { it: { m: "letter", t: "", at: 0 }, cap: "Lan writes a letter to Hoa." },
+      { it: { m: "lock", t: "", at: .5 }, cap: "She locks it before it leaves." },
+      { it: { m: "lock", t: "", at: 1 }, cap: "Nam carries it. He sees a locked box." },
+      { it: { m: "letter", t: "", at: 2 }, cap: "Hoa opens it with her key." },
+    ][step];
+    P[2].has = "has the key";
+    Send.draw(sl.querySelector(".send"), P, S.it);
+    sl.querySelector(".cap").textContent = S.cap;
+  },
+});
+/* @@DECK-JS-END */
+Deck.start();
+</script>
+<!-- @@ARTIFACT-END -->
+</html>

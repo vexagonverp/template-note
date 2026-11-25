@@ -11,13 +11,19 @@ python3 scripts/html_deck.py designs                                   # list de
 python3 scripts/html_deck.py design <deck.html> <name>                 # restyle a deck
 python3 scripts/html_deck.py upgrade <deck.html>                       # latest engine, keep slides
 python3 scripts/html_deck.py artifact <deck.html>                      # copy for claude.ai, only if the user asks for a link
-python3 scripts/html_deck.py shots <deck.html> [3:1 ...]              # PNG of every slide + contact sheets
+python3 scripts/html_deck.py shots <deck.html> [out_dir] [3:1 ...]    # PNG of every slide + contact sheets, then check
+python3 scripts/html_deck.py check <deck.html>                         # measured problems: overflow, overlaps, tiny text, empty slides
+python3 scripts/html_deck.py put <deck.html> slides.html [deck.js]     # replace the deck's slides (and code) from files
+python3 scripts/html_deck.py fill <deck.html>                          # draw {{scene ...}} placeholders (shots, pdf, bundle do it too)
 python3 scripts/html_deck.py bundle <deck.html> [out.html]             # one file to send: images embedded (default .temp/share/)
 python3 scripts/html_deck.py pdf <deck.html> [out.pdf] [--last]       # PDF for phones: one page per press (iOS previews skip JavaScript)
 ```
 
 Presenting: Right / Space = next step, Left = back, **S = slide panel** (thumbnails on the
 left, click to jump), F = full screen, Home / End.
+
+A style with a `starter.html` (clay-blocks) gives new decks its own sample slides, so read that file
+for markup instead of the generic parts below.
 
 Styles (colors, fonts, extra parts) live in `docs/design/<name>/`; visual and deck rules
 (one idea per slide, running example, step-by-step diagrams, contrast) are in

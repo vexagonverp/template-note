@@ -53,7 +53,7 @@ scripts/build.sh --preview Calculus/notes/JaneDoe_S1234567_Final_ExamSheet.tex
 | `slides` | `slides_template.tex` | Beamer 16:9 slides with presenter notes |
 | `script` | `presentation_script_template.tex` | what to say, slide by slide |
 | `asset` | `slide_asset_template.tex` | a slide-sized math image for Canva / PowerPoint |
-| `deck` | `html_deck/deck_template.html` | HTML slide deck with step-by-step animated diagrams (`DECK_DESIGN=<style>`) |
+| `deck` | `html_deck/deck_template.html` | HTML slide deck with step-by-step animated diagrams or project photos (`DECK_DESIGN=<style>`) |
 | `paper` | `paper_llncs/` | Springer LNCS paper folder |
 
 Each template has a built PDF next to it, so you can see what it looks like. Title pages show
@@ -104,7 +104,7 @@ scripts/
   apply_patches.py            many exact replacements, each must match once, dry run first
   figstyle.py                 shared matplotlib style + save() for report/slide figures
   package_submission.sh       hand-in folder + zip in <Course>/submit/
-  html_deck.py                new deck, switch its design style, screenshots, bundle to send, artifact copy
+  html_deck.py                new deck, load slides, switch its design style, screenshots + check, bundle or PDF to send, artifact copy
   contrast.py  cutout.py      check a style's color contrast; cut an object out of its background
 
 docs/
@@ -113,7 +113,7 @@ docs/
   LATEX_TRAPS.md     hangs, missing glyphs, broken figure paths, ignored options, ...
   WORKFLOWS.md       recipes: reading sources, transcripts, checks, labs, hangs, patches
   LOCAL_LLM.md       running the agent rules with a local model
-  design/            visual rules (README.md) + one folder per deck style (paper-stage, block-shapes)
+  design/            visual rules (README.md) + one folder per deck style (paper-stage, block-shapes, clay-blocks)
 ```
 
 ## Skills

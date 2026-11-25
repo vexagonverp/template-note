@@ -1,6 +1,6 @@
 ---
 name: presentation
-description: Prepare a presentation, either an HTML stop-motion deck (default for algorithm and data-structure talks), Beamer slides, or assets for Canva/PowerPoint slides, plus a slide-by-slide speaking script with timings, study notes and backup answers to likely questions. Use when the user has to present a paper, project or proposal.
+description: Prepare a presentation, either an HTML deck (the default, with stop-motion diagrams for algorithm talks and photo slides for project talks), Beamer slides, or assets for Canva/PowerPoint slides, plus a slide-by-slide speaking script with timings, study notes and backup answers to likely questions. Use when the user has to present a paper, project or proposal.
 argument-hint: <CourseFolder> <minutes> [paper.pdf] [deck|beamer|canva]
 ---
 
@@ -14,6 +14,13 @@ shows up literally as a placeholder, take these from the user's message, or ask.
 user's own study (explain a paper or concept to them), there is no talk length and no script:
 skip the script, timings and backup answers, and say so in the reply.
 
+**Short prompts are normal.** Do not ask for what has a sensible default; pick it, and list the
+defaults in one line when you report: audience = classmates new to the topic (no code); length =
+8 minutes; slides = minutes + 2 or 3; course = the folder named, else the one that fits,
+else ask; presenter = the name and ID in `AGENTS.md`; script = only if asked for, or if the talk
+is graded. **If a style is named** ("clay blocks", "paper and stage"), match it to a folder in
+`docs/design/`.
+
 ## 1. Read
 
 - The paper or topic sources, and the brief plus marking criteria in `<Course>/COURSE.md`.
@@ -21,15 +28,20 @@ skip the script, timings and backup answers, and say so in the reply.
 
 ## 2. Create
 
-**HTML deck (default when the talk explains an algorithm, data structure or protocol):**
+**HTML deck (default):**
 
 - Create: `[DECK_DESIGN=<name>] scripts/new_note.sh <Course> deck "<Course display name>" <Descriptor>`
   (styles in `docs/design/`, default `paper-stage`; a new look via `/design-language`).
-- Read `docs/design/README.md` (audience, hierarchy, color, diagrams, examples), then follow
-  `templates/html_deck/DESIGN.md`: one everyday running example, every operation animated one
-  step per press with a caption and a counter, every state checked by a script in
-  `<Course>/presentation/checks/`.
-- **Media:** before writing slides, list `assets/media/` (objects, icons, shapes, textures; see
+- **If `docs/design/<style>/starter.html` exists** (clay-blocks): read the style's `README.md` and that
+  starter, look at `preview.html` rendered (`shots`), and build from those slides. **That is the whole
+  reading list for the look**: skip `DESIGN.md`, `refs/`, the media README, and the source of
+  `preview.html` and `style.css`. Write your slides in a file and load them with `html_deck.py put`.
+- Otherwise read `docs/design/README.md` (audience, hierarchy, color, diagrams, examples) and
+  `templates/html_deck/DESIGN.md`.
+- **Algorithm, data structure or protocol talk** (any style): one everyday running example, every
+  operation animated one step per press with a caption and a counter, every state checked by a
+  script in `<Course>/presentation/checks/`.
+- **Media** (styles without a starter): before writing slides, list `assets/media/` (objects, icons, shapes, textures; see
   its README) and look at the chosen style's `refs/` for the look to aim for (refs never go on
   slides). Use a cut-out (`.cutout`, `.corner-object`, or beside a phrase in a `.split`) only
   where the object carries the idea: keys for a private key, a magnifying glass for the checker,
@@ -37,6 +49,15 @@ skip the script, timings and backup answers, and say so in the reply.
   as decoration on diagram slides. Check any words printed on an object (the stamp says
   "SOLD OUT", so it cannot mean "revoked"). If nothing fits, put a new object in
   `assets/media/inbox/` and say so.
+- **Project talk with pictures** (a prototype, app, site visit, build): look at every picture first
+  and note what it shows, its shape and its smallest text. Landscape photo, portrait photo, wide
+  figure, screenshot and chart each have their own slide in the style. Crop an image file to the
+  part that matters when its text would be under 16px on the slide; a chart's one or two key
+  numbers are worth redrawing. Say only what the pictures and the brief support. If a picture does
+  not seem to belong (another subject, someone else's figure), say so in the report; credit figures
+  from papers on the slide. Arc: title, question, who it is for, how it was planned, how it works,
+  what it looks like, result, what to remember. No running example or checks folder is needed when
+  nothing is computed.
 - **A series of decks** (one per paper or chapter): keep one running example across all of
   them, write the deck CSS once and splice the same file into each, and add an overview deck
   that compares them. Give deck-only CSS classes names that cannot clash with the engine's or
@@ -89,7 +110,8 @@ scripts/new_note.sh <Course> asset  "<Course display name>"     # per math image
 
 - **HTML deck:** `python3 scripts/html_deck.py shots <deck.html> [slide:step ...]` screenshots
   every slide at its last step (plus any middle steps you name) into `.temp/shots/<deck>/`, with
-  contact sheets in `grids/`. Look at every sheet and the middle steps of each animation. Fix
+  contact sheets in `grids/`, then prints `check` (measured overflow, overlaps, tiny text, empty
+  slides). Fix what it lists, but it does not judge looks: look at every sheet and the middle steps of each animation. Fix
   anything clipped, overflowing the bottom, or overlapping (a corner object against a long title
   is the usual one), then shoot again. Then open the local file for the user
   (`open <deck.html>`). Do not publish it as a claude.ai artifact unless the user asks for a link.
@@ -105,6 +127,6 @@ scripts/new_note.sh <Course> asset  "<Course display name>"     # per math image
   bundled file, then `open -R` it so the user can send it. Re-bundle after every change.
   **Phones:** iOS opens a received `.html` in a preview that does not run JavaScript, so the
   deck shows blank. For phones send `python3 scripts/html_deck.py pdf <deck.html>` instead: one
-  page per press, so swiping plays the animation (`--last` for one page per slide). A hosted
+  page per press, so swiping plays the animation (`--last` for one page per slide); look at the pages before sending. A hosted
   link also works, but only publish one when the user asks for a link.
 - Report the slide count (and the total script time if there is a script). Do not commit unless asked.

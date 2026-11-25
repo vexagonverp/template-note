@@ -1,0 +1,283 @@
+<!-- Clay Blocks starter: every new clay-blocks deck begins with these slides. Keep the ones you
+     need, copy them, delete the rest. The comment above a slide says what it is for and its limits.
+     {{scene ...}} is drawn by scripts/html_deck.py; motif names: make_shapes.py motifs. -->
+<!-- @@SLIDES-START -->
+
+<!-- POSTER: the title. 2 lines of up to 11 capitals, or <h1 class="long"> for 3 lines of up to 16.
+     Scene: poster (a house), campus, or ground <1-5 motifs that fit your topic>. 3-5 section tiles. -->
+<section class="slide poster" data-id="poster" data-title="Title">
+  <div class="frame block"><h1>Find the<br>right house</h1>{{scene poster}}</div>
+  <div class="parts">
+    <div><div class="block"><i class="motif pin"></i></div>Location</div>
+    <div><div class="block"><i class="motif house"></i></div>House</div>
+    <div><div class="block"><i class="motif key"></i></div>Keys</div>
+  </div>
+  <div class="who">Presenter name<small>Course or occasion</small></div>
+</section>
+
+<!-- QUESTION: the hook or a section opener. 3 lines of up to 10 capitals, one turquoise part.
+     Bottom: street, street lit, or row <3-6 motifs>. -->
+<section class="slide stage" data-id="question" data-title="Question">
+  <div class="big-q">Would you<br>live here<br>at <em>night?</em></div>
+  <div class="street-line">{{scene street lit}}</div>
+</section>
+
+<!-- TILES: a list of 2-6 things (parts, steps, reasons). Caption: one short line or two. Turquoise
+     only on the one you talk about. Instead of a motif a block can hold a number: <b>3</b>. -->
+<section class="slide" data-id="tiles" data-title="Tiles">
+  <h2>Five things to check</h2>
+  <div class="blocks">
+    <div class="bk"><div class="block hi"><i class="motif pin"></i></div><h3>Location</h3><p>Ten minutes to a shop</p></div>
+    <div class="bk"><div class="block"><i class="motif hill"></i></div><h3>Land</h3><p>Dry and flat</p></div>
+    <div class="bk"><div class="block"><i class="motif house"></i></div><h3>House</h3><p>Roof first, paint last</p></div>
+    <div class="bk"><div class="block"><i class="motif sun"></i></div><h3>Light</h3><p>Sun in the living room</p></div>
+    <div class="bk"><div class="block"><i class="motif key"></i></div><h3>Keys</h3><p>Who owns it today?</p></div>
+  </div>
+  <div class="sect"><div class="block hi"><i class="motif pin"></i></div><b>Location</b><small>1 of 3</small></div>
+</section>
+
+<!-- TEXT AND DRAWING: 2-4 points beside a picture block. Scene: house, or pic <one motif>.
+     Headline beside a picture: up to 3 lines of about 17 letters. One .mark at most. -->
+<section class="slide" data-id="text" data-title="Text and drawing">
+  <div class="split" style="grid-template-columns:1fr 560px;gap:60px">
+    <div>
+      <h2>Visit the same house three times</h2>
+      <ul class="points" style="margin-top:56px">
+        <li><b>Morning.</b> Where does the sun come in?</li>
+        <li><b>Rush hour.</b> How loud is the street?</li>
+        <li><span class="mark">After rain. Does the garden stay wet?</span></li>
+      </ul>
+    </div>
+    <div class="block pic">{{scene house}}</div>
+  </div>
+  <div class="sect"><div class="block hi"><i class="motif house"></i></div><b>House</b><small>2 of 3</small></div>
+</section>
+
+<!-- BLOCKS TO SIZE: compare 2-5 amounts. Set --total and each --v; areas come out exact. --r (width /
+     height) reshapes a block without changing its area. Labels: 1-2 short words.
+     A block under 2% of the total is too small to see: say it in words instead. -->
+<section class="slide" data-id="amounts" data-title="Blocks to size">
+  <div class="split" style="grid-template-columns:560px 1fr;gap:50px">
+    <div>
+      <h2>A fifth of the cash is not the house</h2>
+      <p class="lede" style="margin:40px 0 34px">Sample budget of 100.<br>Every block is drawn to size.</p>
+      <p style="font-size:34px"><span class="mark">Set repairs aside first.</span></p>
+    </div>
+    <div class="plots" style="--total:100">
+      <div class="block plot c3" style="--v:80;place-items:start;padding:56px 60px"><div><b style="font-size:170px">80</b><div style="font:700 38px var(--body)">House</div></div><i class="motif house" style="position:absolute;right:56px;bottom:60px;width:260px;height:260px"></i></div>
+      <div class="col">
+        <div class="plotrow"><div class="block hi plot c2" style="--v:10;--r:.62"><b>10</b></div>Repairs</div>
+        <div class="plotrow"><div class="block line plot c5" style="--v:6;--r:.9"><b>6</b></div>Fees</div>
+        <div class="plotrow"><div class="block line plot c1" style="--v:4;--r:1.3"><b>4</b></div>Moving</div>
+      </div>
+    </div>
+  </div>
+  <div class="sect"><div class="block hi"><i class="motif key"></i></div><b>Keys</b><small>3 of 3</small></div>
+</section>
+
+<!-- STREET: anything step by step (search, sort, hashing, a queue). 2-8 houses of 1-4 floors, labels up to 6
+     letters. Change the states in DECK-JS; compute them, do not type them. -->
+<section class="slide" data-id="street" data-title="Street (step by step)">
+  <h2>Find house 70</h2>
+  <div class="street"></div>
+  <div class="capbar"><p class="cap"></p><span class="counter"></span></div>
+  <div class="sect"><div class="block hi"><i class="motif house"></i></div><b>House</b><small>2 of 3</small></div>
+</section>
+
+<!-- SEND: someone sends something to someone (protocols, encryption, APIs, roles). 2-4 parties, names up to
+     12 letters. The item moves one step per press; put a listener between two parties to show who can see it. -->
+<section class="slide" data-id="send" data-title="Send (step by step)">
+  <h2>The letter passes through Nam</h2>
+  <div class="send"></div>
+  <div class="capbar"><p class="cap"></p></div>
+  <div class="sect"><div class="block hi"><i class="motif key"></i></div><b>Keys</b><small>3 of 3</small></div>
+</section>
+
+<!-- CODE: up to 9 lines of about 42 letters; rules and lines light up together with data-at. -->
+<section class="slide" data-id="code" data-title="Code">
+  <h2>One line moves right</h2>
+  <div class="split" style="grid-template-columns:420px 1fr">
+    <div class="points" style="gap:18px">
+      <div class="rule" data-at="1">1. Knock in the middle.</div>
+      <div class="rule" data-at="2">2. Too low? Go right.</div>
+    </div>
+<pre class="code"><span>let lo = 0, hi = street.length - 1;</span><span>while (lo &lt;= hi) {</span><span data-at="1">  const mid = (lo + hi) &gt;&gt; 1;</span><span>  if (street[mid] === want) return mid;</span><span data-at="2">  if (street[mid] &lt; want) lo = mid + 1;</span><span>  else hi = mid - 1;</span><span>}</span><span>return -1;</span></pre>
+  </div>
+  <div class="sect"><div class="block hi"><i class="motif house"></i></div><b>House</b><small>2 of 3</small></div>
+</section>
+
+<!-- TABLE: more than 6 items, or exact numbers. 3-5 rows; .win marks the row that matters. -->
+<section class="slide" data-id="table" data-title="Table">
+  <h2>Knocks needed, worst case</h2>
+  <div class="grid-table" style="--cols:3">
+    <div class="th"><span>Houses</span><span>One by one</span><span>Binary search</span></div>
+    <div class="row"><span>7</span><span class="mono">7</span><span class="mono">3</span></div>
+    <div class="row"><span>1,000</span><span class="mono">1,000</span><span class="mono">10</span></div>
+    <div class="row win"><span>1,000,000</span><span class="mono">1,000,000</span><span class="mono">20</span></div>
+  </div>
+  <div class="sect"><div class="block hi"><i class="motif house"></i></div><b>House</b><small>2 of 3</small></div>
+</section>
+
+<!-- BIG PHOTO: landscape photo. --x:50%;--y:20% picks the part that stays, --zoom:1.4 crops in (on the figure). Put
+     <img src="assets/photo.jpg" alt="..."> inside the empty div. -->
+<section class="slide" data-id="photo" data-title="Big photo">
+  <h2>One big photo</h2>
+  <figure class="photo"><div></div></figure>
+  <div class="sect"><div class="block hi"><i class="motif house"></i></div><b>House</b><small>2 of 3</small></div>
+</section>
+
+<!-- TWO PHOTOS: before / after, or two options (class="pics three" for three). -->
+<section class="slide" data-id="photos" data-title="Two photos">
+  <h2>Before and after</h2>
+  <div class="pics">
+    <figure class="photo"><div></div><figcaption><b>Before</b></figcaption></figure>
+    <figure class="photo"><div></div><figcaption><b>After</b></figcaption></figure>
+  </div>
+  <div class="sect"><div class="block hi"><i class="motif house"></i></div><b>House</b><small>2 of 3</small></div>
+</section>
+
+<!-- TALL PHOTO: a portrait phone photo beside the text. -->
+<section class="slide" data-id="tall" data-title="Tall photo and text">
+  <div class="split" style="grid-template-columns:1fr 520px;gap:60px">
+    <div>
+      <h2>A photo and its story</h2>
+      <ul class="points" style="margin-top:50px"><li>What the picture shows.</li><li>Why it matters.</li></ul>
+    </div>
+    <figure class="photo tall"><div></div></figure>
+  </div>
+  <div class="sect"><div class="block hi"><i class="motif house"></i></div><b>House</b><small>2 of 3</small></div>
+</section>
+
+<!-- SCREENSHOT, FIGURE or CHART IMAGE: never cropped. Any shape fits. If its text is small,
+     crop the image file to the part that matters first (at least 1000px wide, or it looks blurry). Spots go inside .fit, after the <img>: <b class="spot" style="left:30%;top:40%">1</b>. -->
+<section class="slide" data-id="shot" data-title="Screenshot">
+  <h2>Point at the screen</h2>
+  <div class="split" style="grid-template-columns:1fr 400px;gap:44px">
+    <figure class="shot"><div><span class="fit"></span></div></figure>
+    <ul class="points nums"><li>What to look at first.</li><li>What it changes.</li></ul>
+  </div>
+  <div class="sect"><div class="block hi"><i class="motif house"></i></div><b>House</b><small>2 of 3</small></div>
+</section>
+
+<!-- SUMMARY: the 3 things to remember, as tiles on brown. -->
+<section class="slide stage" data-id="summary" data-title="Summary">
+  <h2>Three things to <em>keep</em></h2>
+  <div class="blocks">
+    <div class="bk"><div class="block"><b>1</b></div><h3>Look at the place</h3><p>Location cannot be changed later.</p></div>
+    <div class="bk"><div class="block"><b>2</b></div><h3>Come back twice</h3><p>Light and noise change during the day.</p></div>
+    <div class="bk"><div class="block"><b>3</b></div><h3>Keep some cash</h3><p>Repairs come first.</p></div>
+  </div>
+</section>
+
+<!-- END -->
+<section class="slide stage" data-id="end" data-title="Questions">
+  <div class="big-q">Any<br><em>questions?</em></div>
+  <div class="street-line">{{scene row house tree key tower sun}}</div>
+</section>
+
+<!-- @@SLIDES-END -->
+<script>
+/* @@DECK-JS-START */
+// Clay: keep this. It sizes pictures (.shot) and amount blocks (.plots) to the room they have.
+const Clay = {
+  fit() {
+    document.querySelectorAll("#stage .shot .fit > img").forEach(img => {
+      if (!img.naturalWidth) return;
+      const box = img.parentElement.parentElement;
+      img.style.width = "0";
+      const w = box.clientWidth - 72, h = Math.max(box.clientHeight - 72, 260);
+      const k = Math.min(w / img.naturalWidth, h / img.naturalHeight);
+      img.parentElement.style.width = "auto";
+      img.style.width = img.naturalWidth * k + "px";
+    });
+    document.querySelectorAll("#stage .plots").forEach(p => {
+      const room = () => p.scrollWidth <= p.clientWidth + 1 && p.offsetTop + p.offsetHeight <= (p.closest(".slide").querySelector(".sect") ? 770 : 830);
+      for (let k = 1.3; k > .25; k -= .05) { p.style.setProperty("--fit", k); if (room()) break; }
+    });
+  },
+};
+window.addEventListener("load", () => { Clay.fit(); document.fonts && document.fonts.ready.then(Clay.fit); });
+
+// Send helper: keep it if the deck has a .send slide. parties: [{ m: "person", n: "Lan", has: "key" }] (2-4).
+// item: { m: "letter", t: "33", at: 0.5 }: at 0 = first party, 1 = second, 0.5 = between them; null = nothing on the way.
+const Send = {
+  draw(el, parties, item) {
+    if (el.children.length !== parties.length + 1) {
+      el.innerHTML = parties.map((p, i) => `<div class="party c${i + 1}"><div class="block"><i class="motif"></i></div><b></b><small></small></div>`).join("") + `<div class="item"><i class="motif"></i><b></b></div>`;
+    }
+    parties.forEach((p, i) => {
+      const e = el.children[i];
+      e.querySelector(".motif").className = "motif " + p.m; e.querySelector("b").textContent = p.n; e.querySelector("small").textContent = p.has || "";
+    });
+    const it = el.lastElementChild;
+    it.style.visibility = item ? "visible" : "hidden";
+    if (!item) return;
+    it.querySelector(".motif").className = "motif " + (item.m || "letter");
+    it.querySelector("b").textContent = item.t || "";
+    it.style.left = `calc(${100 * (item.at + .5) / parties.length}% - 70px)`;
+  },
+};
+
+// Street helper: keep it if the deck has a .street slide.
+// lots: [{ t: "40", s: "now", note: "knock 1" }] or, for several floors (bottom first),
+//       [{ floors: [{ t: "LAN" }, { t: "CHI", s: "hit" }], note: "6" }]. s: empty out rej now hit, or nothing.
+const Street = {
+  draw(el, lots) {
+    const most = Math.max(...lots.map(l => l.floors ? l.floors.length : 1));   // fits few houses and tall houses too
+    el.style.setProperty("--lot", Math.min(200, 375 * 194 / (92 + most * 164)) + "px");
+    el.innerHTML = lots.map((l, i) => {
+      const fl = l.floors || [{ t: l.t ?? "" }], F = 164, H = 92 + fl.length * F, j = [0, 5, -4][i % 3];
+      const size = t => Math.min(62, 180 / Math.max(String(t).length, 2.6));
+      const floors = fl.map((f, k) => {
+        const y = H - F * (k + 1);
+        return `<g class="${f.s || ""}"><path d="M${17 + j / 2} ${y}L${177 - j / 2} ${y + 1}L${179 - k} ${y + F}L${15 + k} ${y + F}Z"/><text x="97" y="${y + F / 2 + size(f.t) * .36}" font-size="${size(f.t)}">${f.t}</text></g>`;
+      }).join("");
+      return `<div class="lot ${l.s || ""}"><svg viewBox="0 0 194 ${H}">${floors}<path d="M3 ${92 + j}L${97 + j * 2} 5L191 ${92 - j}Z"/></svg><small>${l.note ?? ""}</small></div>`;
+    }).join("");
+  },
+};
+
+// Example: binary search, one knock per press. The states are computed, not typed.
+(() => {
+  const A = [10, 20, 30, 40, 50, 60, 70], want = 70;
+  const S = [{ lo: 0, hi: A.length - 1, mid: -1, hit: false, seen: [], cap: "Houses are in order. We want number 70." }];
+  for (let lo = 0, hi = A.length - 1, seen = []; lo <= hi;) {
+    const mid = (lo + hi) >> 1, v = A[mid], hit = v === want;
+    seen = [...seen, mid];
+    S.push({ lo, hi, mid, hit, seen, cap: hit ? `<span class="mark">${v} found.</span>` : v < want ? `${v} is too low. Go right.` : `${v} is too high. Go left.` });
+    if (hit) break;
+    if (v < want) lo = mid + 1; else hi = mid - 1;
+    S.push({ lo, hi, mid: -1, hit: false, seen, cap: lo === hi ? `Only ${A[lo]} is left.` : `${A[lo]} to ${A[hi]} are left.` });
+  }
+  Deck.register("street", {
+    steps: S.length,
+    render(step, sl) {
+      const s = S[Math.min(step, S.length - 1)];
+      Street.draw(sl.querySelector(".street"), A.map((t, i) => {
+        const gone = i < s.lo || i > s.hi, k = s.seen.indexOf(i);
+        return { t, s: i === s.mid ? (s.hit ? "hit" : "now") : gone ? (k >= 0 ? "rej" : "out") : "", note: k >= 0 ? `knock ${k + 1}` : "" };
+      }));
+      sl.querySelector(".cap").innerHTML = s.cap;
+      sl.querySelector(".counter").textContent = `knocks: ${s.seen.length}`;
+    },
+  });
+})();
+
+// Example: one state per press.
+Deck.register("send", {
+  steps: 4,
+  render(step, sl) {
+    const P = [{ m: "person", n: "Lan" }, { m: "person", n: "Nam" }, { m: "person", n: "Hoa" }];
+    const S = [
+      { it: { m: "letter", t: "", at: 0 }, cap: "Lan writes a letter to Hoa." },
+      { it: { m: "lock", t: "", at: .5 }, cap: "She locks it before it leaves." },
+      { it: { m: "lock", t: "", at: 1 }, cap: "Nam carries it. He sees a locked box." },
+      { it: { m: "letter", t: "", at: 2 }, cap: "Hoa opens it with her key." },
+    ][step];
+    P[2].has = "has the key";
+    Send.draw(sl.querySelector(".send"), P, S.it);
+    sl.querySelector(".cap").textContent = S.cap;
+  },
+});
+/* @@DECK-JS-END */
+</script>
